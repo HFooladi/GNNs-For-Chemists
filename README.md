@@ -1,2 +1,2 @@
-# GNNs_from_scratch
+# GNNs From Scratch
 Implementations of different GNNs from scratch

@@ -1,4 +1,4 @@
-# GNN For Chemists
+# GNNs For Chemists
 Implementations of different GNNs from scratch for Chemists
 
 | Notebook | Link | Year |

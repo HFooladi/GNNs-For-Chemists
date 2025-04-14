@@ -24,3 +24,19 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Citation
+
+If you use this repository in your research, please cite it as:
+
+```bibtex
+@misc{gnns_for_chemists,
+  author = {Fooladi, Hosein},
+  title = {GNNs For Chemists: Implementations of Graph Neural Networks from Scratch for Chemical Applications},
+  year = {2025},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/HFooladi/GNNs-For-Chemists}},
+  note = {Educational resource for chemists, pharmacists, and researchers interested in applying Graph Neural Networks to chemical problems}
+}
+```

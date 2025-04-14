@@ -13,6 +13,7 @@ This repository serves as an educational resource for chemists and researchers i
 |01_GNN_representation.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/01_GNN_representation.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
 |02_GNN_message_passing.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/02_GNN_message_passing.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
 |03_GNN_molecular_activity_predictor.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/03_GNN_molecular_activity_predictor.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
+|04_GNN_GCN.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/04_GNN_GCN.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
 |05_GNN_GAT.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/05_GNN_GAT.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
 
 

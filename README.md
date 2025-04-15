@@ -8,8 +8,6 @@ This repository serves as an educational resource for chemists and researchers i
 
 | Notebook | Link | Year |
 | ----- | ----- | ----- |
-|GNN.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/GNN.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2024 |
-|GNN_based_screening_predictor.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/GNN_based_screening_predictor.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2024 |
 |01_GNN_representation.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/01_GNN_representation.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
 |02_GNN_message_passing.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/02_GNN_message_passing.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
 |03_GNN_molecular_activity_predictor.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/03_GNN_molecular_activity_predictor.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |

@@ -17,6 +17,7 @@ To get the most out of this tutorial series, you should have:
 
 No prior experience with graph neural networks is required - we build the concepts from the ground up!
 
+## Resources
 
 | Notebook | Link | Year |
 | ----- | ----- | ----- |

@@ -5,6 +5,18 @@ Implementations of different graph neural networks (GNNs) from scratch for Chemi
 
 This repository serves as an educational resource for chemists and researchers interested in applying Graph Neural Networks to chemical problems. Each notebook progressively builds upon fundamental concepts, from basic graph representation of molecules to advanced molecular property prediction models.
 
+## Prerequisites
+
+To get the most out of this tutorial series, you should have:
+
+- **Python**: Basic to intermediate Python programming skills
+- **Chemistry**: Fundamental understanding of molecular structures and properties
+- **Machine Learning**: Basic familiarity with neural network concepts
+- **Mathematics**: Basic understanding of linear algebra and calculus fundamentals
+- **Packages**: Familiarity with PyTorch, NumPy, and RDKit (installation instructions provided in notebooks)
+
+No prior experience with graph neural networks is required - we build the concepts from the ground up!
+
 
 | Notebook | Link | Year |
 | ----- | ----- | ----- |

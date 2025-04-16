@@ -19,14 +19,14 @@ No prior experience with graph neural networks is required - we build the concep
 
 ## Resources
 
-| Notebook | Link | Year |
-| ----- | ----- | ----- |
-|01_GNN_representation.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/01_GNN_representation.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
-|02_GNN_message_passing.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/02_GNN_message_passing.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
-|03_GNN_molecular_activity_predictor.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/03_GNN_molecular_activity_predictor.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
-|04_GNN_GCN.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/04_GNN_GCN.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
-|05_GNN_GAT.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/05_GNN_GAT.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
-|06_GNN_GIN.ipynb|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/06_GNN_GIN.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
+| Notebook | Description | Link | Year |
+| -------- | ----------- | ---- | ---- |
+|01_GNN_representation.ipynb|Representing molecules as graphs|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/01_GNN_representation.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
+|02_GNN_message_passing.ipynb|Understanding the message-passing concept|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/02_GNN_message_passing.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
+|03_GNN_molecular_activity_predictor.ipynb|Build and train the first GNN|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/03_GNN_molecular_activity_predictor.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
+|04_GNN_GCN.ipynb|Graph convolutional network|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/04_GNN_GCN.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
+|05_GNN_GAT.ipynb|Graph attention network|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/05_GNN_GAT.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
+|06_GNN_GIN.ipynb|Graph isomorphism network|<a target="_blank" href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/06_GNN_GIN.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>| 2025 |
 
 
 ## Contributing

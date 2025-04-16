@@ -1,6 +1,7 @@
 <p align="center">
   <img src="assets/banner.png" alt="GNNs For Chemists Banner" style="max-width:100%;">
 </p>
+
 # GNNs For Chemists
 Implementations of different graph neural networks (GNNs) from scratch for Chemists
 

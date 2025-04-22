@@ -20,14 +20,6 @@ We welcome contributions from the community! Here's how you can help:
 - Tutorial notebooks
 
 
-### Code Style Guidelines
-
-- Follow PEP 8 style guide for Python code
-- Include docstrings for all functions and classes
-- Add comments for complex logic
-- Write clear commit messages
-- Include tests for new features
-
 ### Pull Request Process
 
 1. Update documentation if necessary

@@ -23,6 +23,9 @@ No prior experience with graph neural networks is required - we build the concep
 
 ## Resources
 
+### Core Tutorial Sequence
+The following notebooks (01, 02, 03, ...) form the **main learning path** and are essential for understanding GNN fundamentals:
+
 | Notebook | Description | Open in Colab | Year |
 | -------- | ----------- | -------------- | ---- |
 | 01_GNN_representation.ipynb | Representing molecules as graphs | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/01_GNN_representation.ipynb) | 2025 |
@@ -31,6 +34,13 @@ No prior experience with graph neural networks is required - we build the concep
 | 04_GNN_GCN.ipynb | Graph convolutional network | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/04_GNN_GCN.ipynb) | 2025 |
 | 05_GNN_GAT.ipynb | Graph attention network | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/05_GNN_GAT.ipynb) | 2025 |
 | 06_GNN_GIN.ipynb | Graph isomorphism network | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/06_GNN_GIN.ipynb) | 2025 |
+
+### Supplementary Deep-Dive Notebooks
+These notebooks (01.1, 01.2, ...) provide **additional details and advanced topics** that complement the main series:
+
+| Notebook | Description | Open in Colab | Year |
+| -------- | ----------- | -------------- | ---- |
+| 01.1_GNN_3D_representation.ipynb | Interactive 3D molecular visualizations and stereochemistry | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/01.1_GNN_3D_representation.ipynb) | 2025 |
 
 
 ## Contributing

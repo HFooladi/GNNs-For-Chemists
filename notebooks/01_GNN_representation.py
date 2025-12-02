@@ -69,6 +69,9 @@ from torch_geometric.utils import to_networkx
 # NetworkX for graph visualization
 import networkx as nx
 
+# IPython display utilities
+from IPython.display import display
+
 # Set plotting style
 sns.set_context("notebook", font_scale=1.5)
 sns.set_palette("Set2")
@@ -791,6 +794,33 @@ print(f"Feature vector: {aspirin_features[0]}")
 #    - Ring membership (bonds within rings behave differently)
 #
 # For the first atom (carbon), we see its complete chemical signature encoded in the feature vector. This rich representation allows machine learning models to recognize important pharmacophores and chemical patterns that determine aspirin's properties.
+#
+# ### Summary of Molecular Graph Features
+#
+# The table below summarizes all features used in our advanced molecular graph representation:
+#
+# #### Node Features (21 dimensions per atom)
+#
+# | Index | Feature | Description |
+# |-------|---------|-------------|
+# | 0-10 | Atom type (one-hot) | C, O, N, H, F, P, S, Cl, Br, I, Other |
+# | 11 | Formal charge | Integer charge on atom (e.g., -1, 0, +1) |
+# | 12 | Aromaticity | 1 if atom is part of aromatic system, 0 otherwise |
+# | 13 | Ring membership | 1 if atom is in a ring, 0 otherwise |
+# | 14 | Degree | Number of directly bonded neighbors |
+# | 15 | Total hydrogens | Count of hydrogens (explicit + implicit) |
+# | 16 | Radical electrons | Number of unpaired electrons |
+# | 17-20 | Hybridization (one-hot) | SP, SP², SP³, Other |
+#
+# #### Edge Features (6 dimensions per bond)
+#
+# | Index | Feature | Description |
+# |-------|---------|-------------|
+# | 0-3 | Bond type (one-hot) | Single, Double, Triple, Aromatic |
+# | 4 | Conjugation | 1 if bond is part of conjugated system, 0 otherwise |
+# | 5 | Ring membership | 1 if bond is in a ring, 0 otherwise |
+#
+# These features capture essential chemical information that allows GNNs to learn meaningful molecular representations.
 
 # + [markdown] id="DTkyWf7BzFY1"
 # ### ✅ Checkpoint Exercise: Implement Graph Representation for Ethanol
@@ -943,8 +973,8 @@ print("- First row: source nodes (sender nodes)")
 print("- Second row: target nodes (receiver nodes)")
 print("- Each column represents one directed edge")
 print("For undirected graphs like molecules, each edge appears twice (in both directions)")
-# -
 
+# + [markdown] id="pyg-checkpoint"
 # ### ✅ Checkpoint Exercise: Working with PyG Data Objects
 #
 # 1. Convert the following SMILES string to a PyG Data object: "CC(=O)C" (acetone).

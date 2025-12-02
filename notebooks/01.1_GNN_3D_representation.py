@@ -1321,66 +1321,13 @@ print("💡 If you see py3Dmol viewers above, they are fully interactive!")
 print("   Try clicking and dragging to rotate the molecules.")
 # -
 
-# ### Advanced py3Dmol Demonstrations
+# ### Additional py3Dmol Demonstrations
 #
-# Let's explore some advanced visualization capabilities that showcase why 3D molecular representations are crucial for understanding chemistry:
+# The following demonstrations showcase additional 3D concepts not covered above.
+# (Note: Stereochemistry and conformational flexibility were already demonstrated in Section 3)
 
 # +
-# 1. Stereochemistry Demonstration
-print("🔬 STEREOCHEMISTRY: Why 2D Graphs Can't Tell the Whole Story")
-print("=" * 60)
-
-if PY3DMOL_AVAILABLE and ENHANCED_VIZ_AVAILABLE:
-    print("Creating interactive stereochemistry example...")
-    try:
-        stereo_viewer = create_py3dmol_stereochemistry_example()
-        if stereo_viewer:
-            print("✅ Stereochemistry demonstration ready!")
-            print("💡 You'll see L-alanine and D-alanine side-by-side")
-            print("   Notice: Same 2D connectivity, different 3D arrangements!")
-            stereo_viewer.show()
-        else:
-            print("⚠️ Stereochemistry demo not available")
-    except Exception as e:
-        print(f"❌ Error creating stereochemistry demo: {e}")
-else:
-    print("⚠️ py3Dmol or enhanced visualizations not available")
-    print("   Install with: pip install py3dmol")
-    
-print("\n" + "="*40)
-
-# +
-# 2. Conformer Explorer for Flexible Molecules
-print("🌀 CONFORMATIONAL FLEXIBILITY: Multiple Shapes, Same Molecule")
-print("=" * 60)
-
-if PY3DMOL_AVAILABLE and ENHANCED_VIZ_AVAILABLE:
-    # Demonstrate with a flexible drug molecule
-    flexible_molecules = [
-        ("CCCCCCCC", "Octane", "Flexible hydrocarbon"),
-        ("CC(=O)OC1=CC=CC=C1C(=O)O", "Aspirin", "Drug molecule")
-    ]
-    
-    for smiles, name, description in flexible_molecules:
-        print(f"\n📋 Exploring {name} ({description})...")
-        try:
-            conformer_viewer = create_py3dmol_conformer_explorer(smiles, name, n_conformers=5)
-            if conformer_viewer:
-                print(f"✅ Conformer explorer for {name} ready!")
-                print(f"💡 You'll see multiple conformations with energy rankings")
-                conformer_viewer.show()
-            else:
-                print(f"⚠️ Could not create conformer explorer for {name}")
-        except Exception as e:
-            print(f"❌ Error with {name}: {e}")
-else:
-    print("⚠️ Advanced conformer exploration requires py3Dmol")
-    print("   Install with: pip install py3dmol")
-
-print("\n" + "="*40)
-
-# +
-# 3. Distance-Based Edges Visualization
+# Distance-Based Edges Visualization - Shows how cutoffs affect graph connectivity
 print("📊 DISTANCE-BASED EDGES: How Cutoffs Affect Graph Connectivity")
 print("=" * 60)
 

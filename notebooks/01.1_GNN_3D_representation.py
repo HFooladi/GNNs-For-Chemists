@@ -863,6 +863,132 @@ def create_3d_molecular_graph(mol, cutoff_distance=5.0, include_bond_edges=True)
     
     return node_features, edge_indices, edge_features, coordinates
 
+
+def calculate_geometric_features(mol, coordinates):
+    """
+    Calculate comprehensive geometric features for a molecule.
+    
+    These features capture the 3D shape and size of the molecule, which are
+    critical for understanding molecular properties like binding affinity,
+    solubility, and reactivity.
+    
+    Args:
+        mol: RDKit molecule with 3D coordinates
+        coordinates: numpy array of shape (n_atoms, 3) with x, y, z positions
+    
+    Returns:
+        dict: Dictionary containing geometric descriptors:
+            - diameter: Maximum interatomic distance (molecular size)
+            - radius_of_gyration: Measure of molecular compactness
+            - asphericity: Deviation from spherical shape (0 = sphere)
+            - acylindricity: Deviation from cylindrical shape
+            - convex_hull_volume: Volume of convex hull enclosing all atoms
+    """
+    n_atoms = len(coordinates)
+    
+    # Calculate center of mass (geometric center)
+    center_of_mass = np.mean(coordinates, axis=0)
+    
+    # Calculate radius of gyration (measure of molecular spread/compactness)
+    # Smaller values = more compact molecule
+    rg_squared = np.mean(np.sum((coordinates - center_of_mass)**2, axis=1))
+    radius_of_gyration = np.sqrt(rg_squared)
+    
+    # Calculate molecular diameter (maximum pairwise distance between atoms)
+    # This gives the "size" of the molecule
+    max_distance = 0.0
+    for i in range(n_atoms):
+        for j in range(i + 1, n_atoms):
+            distance = np.linalg.norm(coordinates[i] - coordinates[j])
+            max_distance = max(max_distance, distance)
+    diameter = max_distance
+    
+    # Calculate asphericity and acylindricity from inertia tensor
+    # These describe molecular shape: asphericity = 0 for perfect sphere
+    centered_coords = coordinates - center_of_mass
+    
+    # Build the gyration tensor (similar to inertia tensor)
+    I = np.zeros((3, 3))
+    for coord in centered_coords:
+        x, y, z = coord
+        I[0, 0] += y*y + z*z
+        I[1, 1] += x*x + z*z
+        I[2, 2] += x*x + y*y
+        I[0, 1] -= x*y
+        I[0, 2] -= x*z
+        I[1, 2] -= y*z
+    
+    # Symmetrize the tensor
+    I[1, 0] = I[0, 1]
+    I[2, 0] = I[0, 2]
+    I[2, 1] = I[1, 2]
+    
+    # Eigenvalues give principal moments (λ1 ≤ λ2 ≤ λ3)
+    eigenvalues = np.sort(np.real(np.linalg.eigvals(I)))
+    
+    # Asphericity: 0 for sphere, positive for non-spherical
+    asphericity = eigenvalues[2] - 0.5*(eigenvalues[0] + eigenvalues[1])
+    
+    # Acylindricity: difference between two smaller eigenvalues
+    acylindricity = eigenvalues[1] - eigenvalues[0]
+    
+    # Calculate convex hull volume (if scipy available)
+    # This is the volume of the smallest convex shape containing all atoms
+    convex_hull_volume = 0.0
+    try:
+        from scipy.spatial import ConvexHull
+        if n_atoms >= 4:  # Need at least 4 points for 3D hull
+            hull = ConvexHull(coordinates)
+            convex_hull_volume = hull.volume
+    except ImportError:
+        # scipy not available, use bounding box as approximation
+        ranges = np.ptp(coordinates, axis=0)
+        convex_hull_volume = np.prod(ranges)
+    except Exception:
+        # ConvexHull can fail for degenerate cases (e.g., planar molecules)
+        ranges = np.ptp(coordinates, axis=0)
+        convex_hull_volume = np.prod(ranges)
+    
+    return {
+        'diameter': diameter,
+        'radius_of_gyration': radius_of_gyration,
+        'asphericity': asphericity,
+        'acylindricity': acylindricity,
+        'convex_hull_volume': convex_hull_volume,
+        'center_of_mass': center_of_mass
+    }
+
+
+def create_advanced_3d_graph(mol, cutoff_distance=5.0):
+    """
+    Create an advanced 3D molecular graph with comprehensive features.
+    
+    This function combines the basic 3D graph construction with geometric
+    feature calculation to provide a complete representation for GNNs.
+    
+    Args:
+        mol: RDKit molecule with 3D coordinates
+        cutoff_distance: Maximum distance for creating non-covalent edges (Angstroms)
+    
+    Returns:
+        tuple: (node_features, edge_indices, edge_features, coordinates, geometric_features)
+            - node_features: Array of atom features including 3D coordinates
+            - edge_indices: List of (source, target) tuples for edges
+            - edge_features: Array of edge features (covalent/distance, distance, 1/distance)
+            - coordinates: Raw 3D coordinates (n_atoms, 3)
+            - geometric_features: Dictionary of molecular shape descriptors
+    """
+    # Get basic 3D graph components
+    node_features, edge_indices, edge_features, coordinates = create_3d_molecular_graph(
+        mol, cutoff_distance=cutoff_distance
+    )
+    
+    # Calculate comprehensive geometric features
+    geometric_features = calculate_geometric_features(mol, coordinates)
+    
+    return node_features, edge_indices, edge_features, coordinates, geometric_features
+
+
 # Test 3D graph construction
 print("Testing 3D molecular graph construction:")
 print("=" * 45)

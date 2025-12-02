@@ -45,6 +45,41 @@
 # !pip install -q plotly
 # !pip install -q py3dmol
 
+# + id="colab-setup-utils"
+#@title Setup utils for Google Colab (run this cell if on Colab)
+# This cell downloads the enhanced visualization utilities needed for professional 3D visualizations.
+# Only needed when running on Google Colab - skip if running locally with the full repository.
+
+import os
+import sys
+
+# Check if running on Google Colab
+IN_COLAB = 'google.colab' in sys.modules
+
+if IN_COLAB:
+    # Create utils directory if it doesn't exist
+    os.makedirs('utils', exist_ok=True)
+    
+    # Download the enhanced visualization module from GitHub
+    import urllib.request
+    utils_url = "https://raw.githubusercontent.com/HFooladi/GNNs-For-Chemists/main/notebooks/utils/enhanced_3d_visualizations.py"
+    utils_path = "utils/enhanced_3d_visualizations.py"
+    
+    # Also create __init__.py for the utils package
+    with open('utils/__init__.py', 'w') as f:
+        f.write('# Utils package for GNN visualizations\n')
+    
+    try:
+        urllib.request.urlretrieve(utils_url, utils_path)
+        print("✅ Enhanced visualization utilities downloaded successfully!")
+        print("   You now have access to professional py3Dmol molecular visualizations.")
+    except Exception as e:
+        print(f"⚠️ Could not download utils: {e}")
+        print("   Some advanced visualizations may not be available.")
+        print("   The notebook will still work with basic visualizations.")
+else:
+    print("📁 Running locally - utils should be available from repository.")
+
 # + [markdown] id="cKHLDrQ1mwDo"
 # Now let's import the libraries we'll need throughout this tutorial:
 

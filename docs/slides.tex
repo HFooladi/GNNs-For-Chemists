@@ -13,6 +13,7 @@
 \usepackage{amssymb}  % For checkmark symbol
 \usepackage{pifont}  % For cross mark symbol
 \usepackage{ragged2e}  % For proper column alignment in beamer
+\usepackage{fontawesome}  % For \faEnvelope and \faGlobe
 \usetikzlibrary{shapes,arrows,positioning,fit,backgrounds}
 \definecolor{mygreen}{RGB}{28,172,0}
 \definecolor{mylilas}{RGB}{170,55,241}
@@ -60,15 +61,33 @@
 \beamertemplatenavigationsymbolsempty  % Remove navigation symbols
 \setbeamertemplate{footline}{}  % Remove the footer completely
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \title{An Introduction to Graph Neural Networks (GNNs) for Molecules}
-\author{MPS6 Course}
-\date{10.04.2025}
+\author{Hosein Fooladi}
+\date{09.12.2025}
+
+% Contact info in bottom left
+\titlegraphic{
+    \vspace{1.5cm}
+    \hspace{-5cm}  % Small left margin
+    \begin{minipage}{0.5\textwidth}
+        \raggedright
+        \footnotesize
+        \textcolor{neutral}{
+            \textbf{Contact:}\\[2pt]
+            \faEnvelope\ \texttt{hosein.fooladi@univie.ac.at}\\[2pt]
+            \faGlobe\ \url{https://hfooladi.github.io}
+        }
+    \end{minipage}
+    \hspace{0.5cm}
+}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
 
 \begin{frame}
     \titlepage
 \end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Course Outline}
     \begin{itemize}

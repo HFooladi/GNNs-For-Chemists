@@ -21,7 +21,18 @@
 # ## Table of Contents
 # 1. [Setup and Installation](#setup-and-installation)
 # 2. [Introduction to Alternative Graph Representations](#introduction)
-# 3. [Theoretical Background: Dual Graph Approaches](#theoretical-background)
+#    - 2.1 Quick Recap: What We've Learned So Far
+#    - 2.2 What Traditional Graphs Miss
+#    - 2.3 Learning Objectives
+#    - 2.4 A Concrete Example: Acetic Acid
+# 3. [The Dual Graph Solution](#theoretical-background)
+#    - 3.1 The Key Insight
+#    - 3.2 Understanding the Dual Graph Concept
+#    - 3.3 Step-by-Step Transformation Tutorial
+#    - 3.4 Side-by-Side Comparison
+#    - 3.5 Interactive 3D Dual Graph Demo
+#    - 3.6 Preview: Dihedral Angles with Butane
+#    - 3.7 Mathematical Formulation
 # 4. [Bond-as-Node Graph Construction](#bond-as-node-graph-construction)
 # 5. [Angle-Based Edge Creation](#angle-based-edge-creation)
 # 6. [Dihedral Angles and Torsional Information](#dihedral-angles-and-torsional-information)
@@ -42,6 +53,7 @@
 # !pip install -q torch_geometric
 # !pip install -q plotly
 # !pip install -q networkx
+# !pip install -q py3dmol
 
 # + [markdown] id="cKHLDrQ1mwDo"
 # Import the required libraries:
@@ -104,48 +116,279 @@ print(f"PyTorch version: {torch.__version__}")
 # + [markdown] id="r1xzRB8EkUtQ"
 # ## 2. Introduction to Alternative Graph Representations <a name="introduction"></a>
 #
+# ### 2.1 Quick Recap: What We've Learned So Far
+#
+# Before diving into alternative representations, let's recall what we covered in the previous notebooks:
+#
+# **From Notebook 01 (Basic Molecular Graphs)**:
+# - Molecules can be represented as graphs where **atoms are nodes** and **bonds are edges**
+# - We learned to create adjacency matrices and node feature matrices
+# - This "traditional graph" captures the **topology** (connectivity) of a molecule
+#
+# **From Notebook 01.1 (3D Representations)**:
+# - We added **3D coordinates** to our molecular graphs
+# - We saw that molecules with identical 2D graphs can have different 3D shapes (conformers, stereoisomers)
+# - 3D information is crucial for drug design, stereochemistry, and property prediction
+#
+# **The Missing Piece**:
+# While 3D coordinates give us spatial positions, we're still treating **atoms as the fundamental units**.
+# But chemists often think in terms of **bonds and angles** - and that's what we'll explore today!
+#
+# ### 2.2 What Traditional Graphs Miss
+#
 # Traditional molecular graphs represent molecules as:
 # - **Nodes**: Atoms
 # - **Edges**: Chemical bonds
 #
-# However, this representation has limitations:
-# 1. **Missing geometric information**: Bond angles and dihedral angles are not explicitly captured
-# 2. **Limited spatial awareness**: 3D molecular geometry is crucial for many properties
-# 3. **Insufficient for complex interactions**: Multi-body interactions are not well represented
+# However, this representation has important limitations:
+# 1. **Missing geometric information**: Bond angles (e.g., the ~121° carbonyl angle) are not explicitly captured
+# 2. **Bond types look the same structurally**: A C-C single bond and C=O double bond are both just "edges" in the graph
+# 3. **No spatial relationships**: How bonds relate to each other in 3D space is lost
 #
-# ### Alternative Representation Paradigms
+# Let's see this concretely with an example - **acetic acid (CH3COOH)** - which has both single AND double bonds.
 #
-# The GeoGNN paper introduced a **dual graph approach**:
-# 1. **Primary Graph (G)**: Traditional atom-bond representation
-# 2. **Secondary Graph (H)**: Bond-angle representation where:
-#    - **Nodes**: Chemical bonds
-#    - **Edges**: Bond angles (connecting bonds that share an atom)
-#
-# This captures both **topological** and **geometric** information simultaneously.
-#
-# ### Why Alternative Representations Matter
-#
-# - **Enhanced geometric awareness**: Explicit representation of angles and torsions
-# - **Better property prediction**: Improved performance on molecular property tasks
-# - **Richer feature space**: More information for machine learning models
-# - **Chemical intuition**: Aligns better with how chemists think about molecular structure
-#
-# ### Learning Objectives
+# ### 2.3 Learning Objectives
 #
 # By the end of this tutorial, you will be able to:
-# - **Construct** bond-as-node molecular graphs
+# - **Understand** why traditional graphs miss important geometric information
+# - **Construct** bond-as-node molecular graphs (where bonds become the fundamental units)
 # - **Calculate** bond angles and dihedral angles from molecular structures
-# - **Implement** dual graph representations inspired by GeoGNN
-# - **Visualize** alternative graph representations
-# - **Compare** different graph paradigms for molecular representation
+# - **Implement** dual graph representations inspired by GeoGNN (Fang et al., Nature Machine Intelligence, 2022)
+# - **Visualize** the transformation from traditional to dual graph representations
+# - **Compare** what each representation captures
+
+# + [markdown] id="acetic-acid-demo-intro"
+# ### 2.4 A Concrete Example: What's Missing in Acetic Acid?
+#
+# Let's visualize exactly what information traditional graphs fail to capture, using acetic acid (CH3COOH).
+# This molecule is perfect for our demonstration because it contains:
+# - **Single bonds**: C-C, C-O, O-H
+# - **A double bond**: C=O (the carbonyl group)
+# - **Important angles**: The ~121° carbonyl angle that defines the carboxylic acid geometry
+
+# + colab={"base_uri": "https://localhost:8080/", "height": 500} id="acetic-acid-demo"
+def demonstrate_limitation_with_acetic_acid():
+    """
+    Demonstrate why traditional graphs miss important chemical information,
+    using acetic acid (CC(=O)O) which has BOTH single and double bonds.
+
+    This is the "aha moment" - showing what geometry information is lost
+    when we only encode atoms and bonds.
+
+    Returns:
+        py3Dmol viewer or None if py3Dmol is not available
+    """
+    print("Why Traditional Graphs Fall Short: The Acetic Acid Example")
+    print("=" * 65)
+
+    # Create acetic acid with 3D coordinates
+    smiles = "CC(=O)O"
+    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.AddHs(mol)
+
+    # Generate 3D coordinates
+    params = AllChem.ETKDGv3()
+    params.randomSeed = 42
+    conf_id = AllChem.EmbedMolecule(mol, params)
+    if conf_id == -1:
+        print("Could not generate 3D coordinates")
+        return None
+    AllChem.MMFFOptimizeMolecule(mol)
+
+    # Get conformer for position calculations
+    conf = mol.GetConformer()
+
+    # Analyze what traditional graph captures
+    print("\n1. What Traditional Graph (G) Captures:")
+    print(f"   - {mol.GetNumAtoms()} atoms (nodes) including hydrogens")
+    print(f"   - {mol.GetNumBonds()} bonds (edges)")
+
+    # Count bond types
+    single_bonds = 0
+    double_bonds = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+            single_bonds += 1
+        elif bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            double_bonds += 1
+
+    print(f"   - Bond types: {single_bonds} single bonds, {double_bonds} double bond")
+    print("   - Atom types: C, C, O, O, H, H, H, H")
+
+    # What's missing
+    print("\n2. What Traditional Graph (G) MISSES:")
+    print("   - The C-C=O bond angle (~121° for sp2 carbonyl carbon)")
+    print("   - The O-C-O angle in the carboxyl group (~120°)")
+    print("   - The C-C-O angle for the methyl attachment")
+    print("   - The C=O double bond's planarity vs C-C single bond's rotation")
+
+    print("\n3. WHY THIS MATTERS for Machine Learning:")
+    print("   - In a traditional graph, single bonds and double bonds are just 'edges'")
+    print("   - The ~121° carbonyl angle is crucial for reactivity prediction")
+    print("   - A GNN using only topology treats ALL bonds similarly in the graph structure!")
+    print("   - Geometric information must be EXPLICITLY encoded - that's what dual graphs do!")
+
+    # Create py3Dmol visualization
+    if not PY3DMOL_AVAILABLE:
+        print("\npy3Dmol not available - skipping 3D visualization")
+        return None
+
+    print("\nCreating 3D visualization...")
+
+    # Create side-by-side viewer
+    viewer = py3Dmol.view(width=1200, height=450, viewergrid=(1, 2))
+    mol_block = Chem.MolToMolBlock(mol)
+
+    # LEFT PANEL: Traditional view (what we capture)
+    viewer.addModel(mol_block, 'mol', viewer=(0, 0))
+    viewer.setStyle({'model': -1}, {
+        'stick': {'colorscheme': 'Jmol', 'radius': 0.2},
+        'sphere': {'colorscheme': 'Jmol', 'scale': 0.3}
+    }, viewer=(0, 0))
+
+    viewer.addLabel('Traditional Graph View\n\nAtoms = Nodes\nBonds = Edges\n\nThis is what we encode...',
+                   {'position': {'x': 0, 'y': 3.5, 'z': 0},
+                    'backgroundColor': '#2196F3',
+                    'fontColor': 'white', 'fontSize': 12}, viewer=(0, 0))
+
+    # RIGHT PANEL: Highlight what we're missing (angles)
+    viewer.addModel(mol_block, 'mol', viewer=(0, 1))
+    viewer.setStyle({'model': -1}, {
+        'stick': {'colorscheme': 'Jmol', 'radius': 0.15},
+        'sphere': {'colorscheme': 'Jmol', 'scale': 0.25}
+    }, viewer=(0, 1))
+
+    # Find the carbonyl carbon (connected to =O)
+    carbonyl_c_idx = None
+    carbonyl_o_idx = None
+    hydroxyl_o_idx = None
+    methyl_c_idx = None
+
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() == 'C':
+            for bond in atom.GetBonds():
+                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    other = bond.GetOtherAtom(atom)
+                    if other.GetSymbol() == 'O':
+                        carbonyl_c_idx = atom.GetIdx()
+                        carbonyl_o_idx = other.GetIdx()
+                        break
+
+    # Find methyl carbon and hydroxyl oxygen
+    if carbonyl_c_idx is not None:
+        carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
+        for neighbor in carbonyl_c.GetNeighbors():
+            if neighbor.GetSymbol() == 'C':
+                methyl_c_idx = neighbor.GetIdx()
+            elif neighbor.GetSymbol() == 'O' and neighbor.GetIdx() != carbonyl_o_idx:
+                hydroxyl_o_idx = neighbor.GetIdx()
+
+    # Highlight the key angle (C-C=O) if we found the atoms
+    if carbonyl_c_idx is not None and carbonyl_o_idx is not None and methyl_c_idx is not None:
+        # Get positions
+        carbonyl_c_pos = conf.GetAtomPosition(carbonyl_c_idx)
+        carbonyl_o_pos = conf.GetAtomPosition(carbonyl_o_idx)
+        methyl_c_pos = conf.GetAtomPosition(methyl_c_idx)
+
+        # Draw thick lines to show the angle
+        viewer.addCylinder({'start': {'x': float(carbonyl_c_pos.x), 'y': float(carbonyl_c_pos.y), 'z': float(carbonyl_c_pos.z)},
+                          'end': {'x': float(carbonyl_o_pos.x), 'y': float(carbonyl_o_pos.y), 'z': float(carbonyl_o_pos.z)},
+                          'radius': 0.2, 'color': '#F44336', 'alpha': 0.9}, viewer=(0, 1))
+
+        viewer.addCylinder({'start': {'x': float(carbonyl_c_pos.x), 'y': float(carbonyl_c_pos.y), 'z': float(carbonyl_c_pos.z)},
+                          'end': {'x': float(methyl_c_pos.x), 'y': float(methyl_c_pos.y), 'z': float(methyl_c_pos.z)},
+                          'radius': 0.2, 'color': '#F44336', 'alpha': 0.9}, viewer=(0, 1))
+
+        # Calculate and display the angle
+        vec1 = np.array([carbonyl_o_pos.x - carbonyl_c_pos.x,
+                        carbonyl_o_pos.y - carbonyl_c_pos.y,
+                        carbonyl_o_pos.z - carbonyl_c_pos.z])
+        vec2 = np.array([methyl_c_pos.x - carbonyl_c_pos.x,
+                        methyl_c_pos.y - carbonyl_c_pos.y,
+                        methyl_c_pos.z - carbonyl_c_pos.z])
+
+        cos_angle = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+        angle_deg = np.degrees(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
+
+        # Add angle label near the vertex
+        viewer.addLabel(f'C-C=O angle\n~{angle_deg:.0f}deg',
+                       {'position': {'x': float(carbonyl_c_pos.x),
+                                   'y': float(carbonyl_c_pos.y + 1.5),
+                                   'z': float(carbonyl_c_pos.z)},
+                        'backgroundColor': '#F44336',
+                        'fontColor': 'white', 'fontSize': 11}, viewer=(0, 1))
+
+    # Highlight O-C-O angle if we found hydroxyl oxygen
+    if carbonyl_c_idx is not None and carbonyl_o_idx is not None and hydroxyl_o_idx is not None:
+        hydroxyl_o_pos = conf.GetAtomPosition(hydroxyl_o_idx)
+
+        viewer.addCylinder({'start': {'x': float(carbonyl_c_pos.x), 'y': float(carbonyl_c_pos.y), 'z': float(carbonyl_c_pos.z)},
+                          'end': {'x': float(hydroxyl_o_pos.x), 'y': float(hydroxyl_o_pos.y), 'z': float(hydroxyl_o_pos.z)},
+                          'radius': 0.15, 'color': '#4CAF50', 'alpha': 0.9}, viewer=(0, 1))
+
+        # Calculate O-C-O angle
+        vec1 = np.array([carbonyl_o_pos.x - carbonyl_c_pos.x,
+                        carbonyl_o_pos.y - carbonyl_c_pos.y,
+                        carbonyl_o_pos.z - carbonyl_c_pos.z])
+        vec3 = np.array([hydroxyl_o_pos.x - carbonyl_c_pos.x,
+                        hydroxyl_o_pos.y - carbonyl_c_pos.y,
+                        hydroxyl_o_pos.z - carbonyl_c_pos.z])
+
+        cos_angle2 = np.dot(vec1, vec3) / (np.linalg.norm(vec1) * np.linalg.norm(vec3))
+        angle_deg2 = np.degrees(np.arccos(np.clip(cos_angle2, -1.0, 1.0)))
+
+        viewer.addLabel(f'O-C-O angle\n~{angle_deg2:.0f}deg',
+                       {'position': {'x': float(carbonyl_c_pos.x - 1.5),
+                                   'y': float(carbonyl_c_pos.y),
+                                   'z': float(carbonyl_c_pos.z)},
+                        'backgroundColor': '#4CAF50',
+                        'fontColor': 'white', 'fontSize': 11}, viewer=(0, 1))
+
+    viewer.addLabel('What We\'re MISSING!\n\nBond angles define geometry\nThis info is NOT in the graph!',
+                   {'position': {'x': 0, 'y': 3.5, 'z': 0},
+                    'backgroundColor': '#FF5722',
+                    'fontColor': 'white', 'fontSize': 12}, viewer=(0, 1))
+
+    viewer.zoomTo()
+
+    print("\nLeft: What traditional graph captures (topology)")
+    print("Right: What it MISSES (bond angles shown in red/green)")
+    print("\nThe solution? Make BONDS the nodes, and ANGLES the edges!")
+
+    return viewer
+
+# Run the demonstration
+acetic_acid_demo_viewer = demonstrate_limitation_with_acetic_acid()
+if acetic_acid_demo_viewer:
+    acetic_acid_demo_viewer.show()
 
 # + [markdown] id="VzsxoQxEm9dM"
-# ## 3. Theoretical Background: Dual Graph Approaches <a name="theoretical-background"></a>
+# ## 3. The Dual Graph Solution <a name="theoretical-background"></a>
+#
+# Now that we understand what's missing from traditional graphs, let's see how **dual graphs** solve this problem.
+
+# + [markdown] id="key-insight-table"
+# ### 3.1 The Key Insight
+#
+# Here's the fundamental transformation:
+#
+# | | **Traditional Graph (G)** | **Dual/Bond-Angle Graph (H)** |
+# |---|---------------------------|-------------------------------|
+# | **Nodes** | Atoms | **Bonds** |
+# | **Edges** | Bonds | **Angles** (between adjacent bonds) |
+# | **Captures** | Topology (connectivity) | **Geometry** (shape) |
+# | **Example** | "Carbon connected to Oxygen" | "C-C bond at 121° to C=O bond" |
+#
+# **Why this works**: By making bonds the fundamental units, we can explicitly encode the angles between them - which is exactly the geometric information we were missing!
+#
+# Think about it from a chemistry perspective:
+# - Traditional graphs tell you **what atoms are connected**
+# - Dual graphs tell you **how those connections are arranged in space**
 
 # + [markdown] id="zF4rEulu6gUI"
-# ### Understanding the Dual Graph Concept
+# ### 3.2 Understanding the Dual Graph Concept
 #
-# Let's first understand what we mean by "dual graphs" in molecular representation:
+# Let's formalize what we mean by "dual graphs" in molecular representation:
 #
 # **Traditional Graph (G)**:
 # - Nodes (V_G): Atoms {A₁, A₂, A₃, ...}
@@ -156,88 +399,103 @@ print(f"PyTorch version: {torch.__version__}")
 # - Edges (E_H): Bond angles {∠(B₁₂, B₂₃), ∠(B₂₃, B₃₄), ...}
 #
 # This creates a **hierarchical representation** where bonds in the first graph become nodes in the second graph.
+# The key insight is that **two bonds share an edge if and only if they share a common atom**.
 
 # + colab={"base_uri": "https://localhost:8080/", "height": 400} id="uM4e1dRlndV_" outputId="conceptual-diagram"
 def illustrate_dual_graph_concept():
     """
     Create a conceptual diagram showing traditional vs dual graph representations.
+    Uses acetic acid (CH3-C(=O)-OH) as the example molecule.
     """
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    
-    # Example molecule: propane (C-C-C)
+
+    # Example molecule: Acetic acid core (simplified: C-C(=O)-O)
     # Traditional representation
     ax1 = axes[0, 0]
-    ax1.set_title('Traditional Graph (G)\nAtoms as Nodes, Bonds as Edges', fontsize=12, weight='bold')
-    
-    # Draw atoms as nodes
-    atom_positions = [(0, 0), (1, 0), (2, 0)]
-    atom_labels = ['C₁', 'C₂', 'C₃']
-    
-    for i, (pos, label) in enumerate(zip(atom_positions, atom_labels)):
-        circle = plt.Circle(pos, 0.1, color='skyblue', zorder=3)
+    ax1.set_title('Traditional Graph (G)\nAtoms as Nodes, Bonds as Edges\n(Acetic Acid Core)', fontsize=12, weight='bold')
+
+    # Draw atoms as nodes - simplified acetic acid structure
+    # CH3 - C(=O) - OH  ->  C1 - C2 = O1, C2 - O2
+    atom_positions = [(0, 0), (1.2, 0), (1.8, 0.6), (1.8, -0.6)]
+    atom_labels = ['C₁\n(CH₃)', 'C₂', 'O₁\n(=O)', 'O₂\n(-OH)']
+    atom_colors = ['skyblue', 'skyblue', 'salmon', 'salmon']
+
+    for i, (pos, label, color) in enumerate(zip(atom_positions, atom_labels, atom_colors)):
+        circle = plt.Circle(pos, 0.15, color=color, zorder=3)
         ax1.add_patch(circle)
-        ax1.text(pos[0], pos[1], label, ha='center', va='center', fontsize=10, weight='bold')
-    
+        ax1.text(pos[0], pos[1], label, ha='center', va='center', fontsize=9, weight='bold')
+
     # Draw bonds as edges
-    ax1.plot([0, 1], [0, 0], 'k-', linewidth=3, label='Bond B₁₂')
-    ax1.plot([1, 2], [0, 0], 'k-', linewidth=3, label='Bond B₂₃')
-    ax1.text(0.5, -0.15, 'B₁₂', ha='center', fontsize=10, style='italic')
-    ax1.text(1.5, -0.15, 'B₂₃', ha='center', fontsize=10, style='italic')
-    
-    ax1.set_xlim(-0.3, 2.3)
-    ax1.set_ylim(-0.3, 0.3)
+    ax1.plot([0, 1.2], [0, 0], 'k-', linewidth=3)  # C-C single
+    ax1.plot([1.2, 1.8], [0, 0.6], 'k-', linewidth=5)  # C=O double (thicker)
+    ax1.plot([1.2, 1.8], [0, -0.6], 'k-', linewidth=3)  # C-O single
+
+    ax1.text(0.6, -0.2, 'C-C', ha='center', fontsize=9, style='italic')
+    ax1.text(1.65, 0.35, 'C=O', ha='center', fontsize=9, style='italic', color='red')
+    ax1.text(1.65, -0.35, 'C-O', ha='center', fontsize=9, style='italic')
+
+    ax1.set_xlim(-0.4, 2.3)
+    ax1.set_ylim(-1.0, 1.0)
     ax1.set_aspect('equal')
     ax1.axis('off')
-    
+
     # Graph statistics for traditional
     ax2 = axes[0, 1]
     ax2.set_title('Traditional Graph Properties', fontsize=12, weight='bold')
-    ax2.text(0.1, 0.8, 'Nodes (Atoms): 3', fontsize=11)
-    ax2.text(0.1, 0.7, 'Edges (Bonds): 2', fontsize=11)
-    ax2.text(0.1, 0.6, 'Information Captured:', fontsize=11, weight='bold')
-    ax2.text(0.15, 0.5, '• Atom types', fontsize=10)
-    ax2.text(0.15, 0.4, '• Bond connectivity', fontsize=10)
-    ax2.text(0.15, 0.3, '• Bond types', fontsize=10)
-    ax2.text(0.1, 0.15, 'Missing Information:', fontsize=11, weight='bold', color='red')
-    ax2.text(0.15, 0.05, '• Bond angles', fontsize=10, color='red')
+    ax2.text(0.1, 0.85, 'Nodes (Atoms): 4 (heavy atoms)', fontsize=11)
+    ax2.text(0.1, 0.75, 'Edges (Bonds): 3', fontsize=11)
+    ax2.text(0.1, 0.65, 'Information Captured:', fontsize=11, weight='bold')
+    ax2.text(0.15, 0.55, '• Atom types (C, O)', fontsize=10)
+    ax2.text(0.15, 0.45, '• Bond connectivity', fontsize=10)
+    ax2.text(0.15, 0.35, '• Bond types (single/double)', fontsize=10)
+    ax2.text(0.1, 0.22, 'Missing Information:', fontsize=11, weight='bold', color='red')
+    ax2.text(0.15, 0.12, '• C-C=O angle (~121°)', fontsize=10, color='red')
+    ax2.text(0.15, 0.02, '• O-C-O angle (~120°)', fontsize=10, color='red')
     ax2.set_xlim(0, 1)
     ax2.set_ylim(0, 1)
     ax2.axis('off')
-    
+
     # Bond-angle representation
     ax3 = axes[1, 0]
     ax3.set_title('Bond-Angle Graph (H)\nBonds as Nodes, Angles as Edges', fontsize=12, weight='bold')
-    
-    # Draw bonds as nodes
-    bond_positions = [(0.5, 0), (1.5, 0)]
-    bond_labels = ['B₁₂', 'B₂₃']
-    
-    for i, (pos, label) in enumerate(zip(bond_positions, bond_labels)):
-        square = plt.Rectangle((pos[0]-0.1, pos[1]-0.1), 0.2, 0.2, 
-                              color='lightcoral', zorder=3)
+
+    # Draw bonds as nodes - positioned to show structure
+    bond_positions = [(0, 0), (1, 0.5), (1, -0.5)]  # C-C, C=O, C-O
+    bond_labels = ['C-C\n(single)', 'C=O\n(double)', 'C-O\n(single)']
+    bond_colors = ['lightblue', 'lightcoral', 'lightgreen']
+
+    for i, (pos, label, color) in enumerate(zip(bond_positions, bond_labels, bond_colors)):
+        square = plt.Rectangle((pos[0]-0.18, pos[1]-0.18), 0.36, 0.36,
+                              color=color, zorder=3)
         ax3.add_patch(square)
-        ax3.text(pos[0], pos[1], label, ha='center', va='center', fontsize=10, weight='bold')
-    
-    # Draw angle as edge
-    ax3.plot([0.5, 1.5], [0, 0], 'r-', linewidth=3)
-    ax3.text(1.0, 0.15, '∠(B₁₂, B₂₃)', ha='center', fontsize=10, style='italic', color='red')
-    
-    ax3.set_xlim(0, 2)
-    ax3.set_ylim(-0.3, 0.3)
+        ax3.text(pos[0], pos[1], label, ha='center', va='center', fontsize=8, weight='bold')
+
+    # Draw angle edges
+    ax3.plot([0, 1], [0, 0.5], 'r-', linewidth=3)  # C-C to C=O angle
+    ax3.plot([0, 1], [0, -0.5], 'b-', linewidth=3)  # C-C to C-O angle
+    ax3.plot([1, 1], [0.5, -0.5], 'g-', linewidth=3)  # C=O to C-O angle (O-C-O)
+
+    ax3.text(0.3, 0.35, '~121°', ha='center', fontsize=9, style='italic', color='red')
+    ax3.text(0.3, -0.35, '~110°', ha='center', fontsize=9, style='italic', color='blue')
+    ax3.text(1.25, 0, '~120°', ha='center', fontsize=9, style='italic', color='green')
+
+    ax3.set_xlim(-0.5, 1.7)
+    ax3.set_ylim(-0.9, 0.9)
     ax3.set_aspect('equal')
     ax3.axis('off')
-    
+
     # Graph statistics for bond-angle
     ax4 = axes[1, 1]
     ax4.set_title('Bond-Angle Graph Properties', fontsize=12, weight='bold')
-    ax4.text(0.1, 0.8, 'Nodes (Bonds): 2', fontsize=11)
-    ax4.text(0.1, 0.7, 'Edges (Angles): 1', fontsize=11)
-    ax4.text(0.1, 0.6, 'Information Captured:', fontsize=11, weight='bold')
-    ax4.text(0.15, 0.5, '• Bond lengths', fontsize=10)
-    ax4.text(0.15, 0.4, '• Bond types', fontsize=10)
-    ax4.text(0.15, 0.3, '• Bond angles', fontsize=10)
-    ax4.text(0.1, 0.15, 'Additional Benefits:', fontsize=11, weight='bold', color='green')
-    ax4.text(0.15, 0.05, '• Geometric relationships', fontsize=10, color='green')
+    ax4.text(0.1, 0.85, 'Nodes (Bonds): 3', fontsize=11)
+    ax4.text(0.1, 0.75, 'Edges (Angles): 3', fontsize=11)
+    ax4.text(0.1, 0.65, 'Information Captured:', fontsize=11, weight='bold')
+    ax4.text(0.15, 0.55, '• Bond lengths', fontsize=10)
+    ax4.text(0.15, 0.45, '• Bond types (as node features)', fontsize=10)
+    ax4.text(0.15, 0.35, '• Bond angles (as edge features!)', fontsize=10)
+    ax4.text(0.1, 0.22, 'Key Advantage:', fontsize=11, weight='bold', color='green')
+    ax4.text(0.15, 0.12, '• Geometry explicitly encoded', fontsize=10, color='green')
+    ax4.text(0.15, 0.02, '• Double bond distinct from single', fontsize=10, color='green')
     ax4.set_xlim(0, 1)
     ax4.set_ylim(0, 1)
     ax4.axis('off')
@@ -247,16 +505,401 @@ def illustrate_dual_graph_concept():
 
 illustrate_dual_graph_concept()
 
-# + [markdown] id="dual-graph-3d-demo"
-# ### 3D Visualization of Dual Graph Concept
+# + [markdown] id="transformation-tutorial-intro"
+# ### 3.3 Step-by-Step Transformation Tutorial
 #
-# Let's create an interactive 3D demonstration of how bonds become nodes in the dual graph representation:
+# Now let's see the transformation from traditional graph to dual graph **step by step** using acetic acid.
+# This interactive 3D visualization shows exactly how we convert atoms/bonds to bonds/angles.
+
+# + colab={"base_uri": "https://localhost:8080/", "height": 700} id="transformation-tutorial-code"
+def create_transformation_tutorial_acetic_acid():
+    """
+    Step-by-step tutorial showing how to transform acetic acid from
+    traditional graph to dual graph representation.
+
+    Uses a 2x3 py3Dmol grid for visual progression:
+    - Top row: Steps 1-3 of the transformation
+    - Bottom row: The resulting graphs
+
+    Returns:
+        py3Dmol viewer or None if py3Dmol is not available
+    """
+    if not PY3DMOL_AVAILABLE:
+        print("py3Dmol not available - cannot create transformation tutorial")
+        return None
+
+    print("Step-by-Step Transformation: Traditional to Dual Graph")
+    print("Using Acetic Acid (CC(=O)O) as our example")
+    print("=" * 60)
+
+    # Create acetic acid
+    smiles = "CC(=O)O"
+    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.AddHs(mol)
+
+    params = AllChem.ETKDGv3()
+    params.randomSeed = 42
+    conf_id = AllChem.EmbedMolecule(mol, params)
+    if conf_id == -1:
+        print("Could not generate 3D coordinates")
+        return None
+    AllChem.MMFFOptimizeMolecule(mol)
+
+    mol_block = Chem.MolToMolBlock(mol)
+    conf = mol.GetConformer()
+
+    # Create 2x3 viewer grid
+    viewer = py3Dmol.view(width=1200, height=700, viewergrid=(2, 3))
+
+    # Define colors - special colors for different bond types
+    single_bond_color = '#2196F3'  # Blue for single bonds
+    double_bond_color = '#F44336'  # Red for double bond
+
+    # === STEP 1: Start with the molecule ===
+    # Panel (0,0): Original molecule
+    viewer.addModel(mol_block, 'mol', viewer=(0, 0))
+    viewer.setStyle({'model': -1}, {
+        'stick': {'colorscheme': 'Jmol', 'radius': 0.2},
+        'sphere': {'colorscheme': 'Jmol', 'scale': 0.35}
+    }, viewer=(0, 0))
+    viewer.addLabel('STEP 1: Our Molecule\nAcetic Acid (CH3COOH)\n8 atoms, 7 bonds',
+                   {'position': {'x': 0, 'y': 4, 'z': 0},
+                    'backgroundColor': '#2196F3',
+                    'fontColor': 'white', 'fontSize': 11}, viewer=(0, 0))
+
+    # === STEP 2: Identify the bonds (future nodes) ===
+    # Panel (0,1): Highlight each bond with a colored sphere at its center
+    viewer.addModel(mol_block, 'mol', viewer=(0, 1))
+    viewer.setStyle({'model': -1}, {'line': {'color': 'lightgray', 'width': 2}}, viewer=(0, 1))
+
+    bond_positions = []
+    bond_info_list = []
+
+    for i, bond in enumerate(mol.GetBonds()):
+        begin_atom = bond.GetBeginAtom()
+        end_atom = bond.GetEndAtom()
+        begin_pos = conf.GetAtomPosition(begin_atom.GetIdx())
+        end_pos = conf.GetAtomPosition(end_atom.GetIdx())
+
+        center_x = (begin_pos.x + end_pos.x) / 2
+        center_y = (begin_pos.y + end_pos.y) / 2
+        center_z = (begin_pos.z + end_pos.z) / 2
+
+        bond_positions.append([center_x, center_y, center_z])
+
+        # Use different colors for single vs double bonds
+        is_double = bond.GetBondType() == Chem.rdchem.BondType.DOUBLE
+        color = double_bond_color if is_double else single_bond_color
+
+        bond_info_list.append({
+            'begin_idx': begin_atom.GetIdx(),
+            'end_idx': end_atom.GetIdx(),
+            'begin_sym': begin_atom.GetSymbol(),
+            'end_sym': end_atom.GetSymbol(),
+            'is_double': is_double,
+            'color': color
+        })
+
+        # Add sphere at bond center
+        viewer.addSphere({'center': {'x': float(center_x), 'y': float(center_y), 'z': float(center_z)},
+                         'radius': 0.35, 'color': color, 'alpha': 0.9}, viewer=(0, 1))
+
+    viewer.addLabel('STEP 2: Identify Bonds\nBlue = single bonds\nRed = double bond (C=O)\nThese become NODES!',
+                   {'position': {'x': 0, 'y': 4, 'z': 0},
+                    'backgroundColor': '#4CAF50',
+                    'fontColor': 'white', 'fontSize': 11}, viewer=(0, 1))
+
+    # === STEP 3: Find shared atoms (create edges) ===
+    # Panel (0,2): Show atoms that connect multiple bonds
+    viewer.addModel(mol_block, 'mol', viewer=(0, 2))
+    viewer.setStyle({'model': -1}, {'line': {'color': 'lightgray', 'width': 1}}, viewer=(0, 2))
+
+    # Find atoms connected to multiple bonds
+    for atom in mol.GetAtoms():
+        bonds_on_atom = list(atom.GetBonds())
+        if len(bonds_on_atom) > 1:
+            pos = conf.GetAtomPosition(atom.GetIdx())
+            viewer.addSphere({'center': {'x': float(pos.x), 'y': float(pos.y), 'z': float(pos.z)},
+                             'radius': 0.5, 'color': 'gold', 'alpha': 0.8}, viewer=(0, 2))
+
+    viewer.addLabel('STEP 3: Find Shared Atoms\nGold = atoms connecting 2+ bonds\nThese create EDGES\n(angle connections)',
+                   {'position': {'x': 0, 'y': 4, 'z': 0},
+                    'backgroundColor': '#FF9800',
+                    'fontColor': 'white', 'fontSize': 11}, viewer=(0, 2))
+
+    # === Bottom Row: Building the Dual Graph ===
+
+    # Panel (1,0): Traditional graph summary
+    viewer.addModel(mol_block, 'mol', viewer=(1, 0))
+    viewer.setStyle({'model': -1}, {
+        'stick': {'colorscheme': 'Jmol', 'radius': 0.15},
+        'sphere': {'colorscheme': 'Jmol', 'scale': 0.3}
+    }, viewer=(1, 0))
+    viewer.addLabel('Traditional Graph (G)\n8 nodes (atoms)\n7 edges (bonds)\nNo angle information',
+                   {'position': {'x': 0, 'y': 4, 'z': 0},
+                    'backgroundColor': '#607D8B',
+                    'fontColor': 'white', 'fontSize': 11}, viewer=(1, 0))
+
+    # Panel (1,1): Dual graph nodes only
+    viewer.addModel(mol_block, 'mol', viewer=(1, 1))
+    viewer.setStyle({'model': -1}, {'line': {'color': '#E0E0E0', 'width': 1}}, viewer=(1, 1))
+
+    # Add bond nodes
+    for i, (center, info) in enumerate(zip(bond_positions, bond_info_list)):
+        viewer.addSphere({'center': {'x': float(center[0]), 'y': float(center[1]), 'z': float(center[2])},
+                         'radius': 0.35, 'color': info['color'], 'alpha': 0.9}, viewer=(1, 1))
+
+    viewer.addLabel('Dual Graph (H) - Nodes\n7 nodes (bonds)\nBlue=single, Red=double\nReady for edges...',
+                   {'position': {'x': 0, 'y': 4, 'z': 0},
+                    'backgroundColor': '#9C27B0',
+                    'fontColor': 'white', 'fontSize': 11}, viewer=(1, 1))
+
+    # Panel (1,2): Complete dual graph with angle edges
+    viewer.addModel(mol_block, 'mol', viewer=(1, 2))
+    viewer.setStyle({'model': -1}, {'line': {'color': '#E0E0E0', 'width': 1}}, viewer=(1, 2))
+
+    # Add bond nodes
+    for i, (center, info) in enumerate(zip(bond_positions, bond_info_list)):
+        viewer.addSphere({'center': {'x': float(center[0]), 'y': float(center[1]), 'z': float(center[2])},
+                         'radius': 0.3, 'color': info['color'], 'alpha': 0.9}, viewer=(1, 2))
+
+    # Add angle edges (connect bonds that share an atom)
+    edge_count = 0
+    atom_to_bonds = defaultdict(list)
+    for i, info in enumerate(bond_info_list):
+        atom_to_bonds[info['begin_idx']].append(i)
+        atom_to_bonds[info['end_idx']].append(i)
+
+    for atom_idx, bond_indices in atom_to_bonds.items():
+        for j in range(len(bond_indices)):
+            for k in range(j + 1, len(bond_indices)):
+                b1_idx = bond_indices[j]
+                b2_idx = bond_indices[k]
+                pos1 = bond_positions[b1_idx]
+                pos2 = bond_positions[b2_idx]
+
+                viewer.addCylinder({'start': {'x': float(pos1[0]), 'y': float(pos1[1]), 'z': float(pos1[2])},
+                                  'end': {'x': float(pos2[0]), 'y': float(pos2[1]), 'z': float(pos2[2])},
+                                  'radius': 0.06, 'color': 'black', 'alpha': 0.7}, viewer=(1, 2))
+                edge_count += 1
+
+    viewer.addLabel(f'COMPLETE Dual Graph (H)\n7 nodes (bonds)\n{edge_count} edges (angles!)\nGeometry encoded!',
+                   {'position': {'x': 0, 'y': 4, 'z': 0},
+                    'backgroundColor': '#4CAF50',
+                    'fontColor': 'white', 'fontSize': 11}, viewer=(1, 2))
+
+    viewer.zoomTo()
+
+    print("\nTRANSFORMATION COMPLETE!")
+    print("-" * 40)
+    print("Traditional Graph (G): 8 atoms as nodes, 7 bonds as edges")
+    print(f"Dual Graph (H): 7 bonds as nodes, {edge_count} angles as edges")
+    print("\nThe dual graph explicitly encodes geometric relationships!")
+    print("Notice: The C=O double bond (red) is now a distinct node.")
+
+    return viewer
+
+# Create the transformation tutorial
+transformation_viewer = create_transformation_tutorial_acetic_acid()
+if transformation_viewer:
+    transformation_viewer.show()
+
+# + [markdown] id="side-by-side-intro"
+# ### 3.4 Side-by-Side Comparison: Before and After
+#
+# Let's directly compare what each representation captures with clear info panels:
+
+# + colab={"base_uri": "https://localhost:8080/", "height": 500} id="side-by-side-code"
+def create_side_by_side_comparison(smiles="CC(=O)O", molecule_name="Acetic Acid"):
+    """
+    Create a clear before/after comparison showing:
+    - Left: What traditional graph captures
+    - Right: What dual graph captures
+
+    Returns:
+        py3Dmol viewer or None if py3Dmol is not available
+    """
+    if not PY3DMOL_AVAILABLE:
+        print("py3Dmol not available")
+        return None
+
+    print(f"Side-by-Side Comparison: Traditional vs Dual Graph")
+    print(f"Molecule: {molecule_name} ({smiles})")
+    print("=" * 60)
+
+    # Create molecule
+    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.AddHs(mol)
+    params = AllChem.ETKDGv3()
+    params.randomSeed = 42
+    conf_id = AllChem.EmbedMolecule(mol, params)
+    if conf_id == -1:
+        print("Could not generate 3D coordinates")
+        return None
+    AllChem.MMFFOptimizeMolecule(mol)
+
+    mol_block = Chem.MolToMolBlock(mol)
+    conf = mol.GetConformer()
+
+    # Create side-by-side viewer
+    viewer = py3Dmol.view(width=1200, height=500, viewergrid=(1, 2))
+
+    # === LEFT PANEL: Traditional Graph ===
+    viewer.addModel(mol_block, 'mol', viewer=(0, 0))
+    viewer.setStyle({'model': -1}, {
+        'stick': {'colorscheme': 'Jmol', 'radius': 0.2},
+        'sphere': {'colorscheme': 'Jmol', 'scale': 0.35}
+    }, viewer=(0, 0))
+
+    n_atoms = mol.GetNumAtoms()
+    n_bonds = mol.GetNumBonds()
+
+    # Count bond types
+    n_single = sum(1 for b in mol.GetBonds() if b.GetBondType() == Chem.rdchem.BondType.SINGLE)
+    n_double = sum(1 for b in mol.GetBonds() if b.GetBondType() == Chem.rdchem.BondType.DOUBLE)
+
+    info_text_left = f"""TRADITIONAL GRAPH (G)
+
+Nodes: {n_atoms} (atoms)
+Edges: {n_bonds} (bonds)
+
+CAPTURES:
+  Atom types (C, O, H)
+  Bond connectivity
+  Bond types ({n_single} single, {n_double} double)
+
+MISSES:
+  Bond angles
+  3D geometry
+  Spatial relationships"""
+
+    viewer.addLabel(info_text_left,
+                   {'position': {'x': 5, 'y': 2, 'z': 0},
+                    'backgroundColor': '#E3F2FD',
+                    'fontColor': 'black', 'fontSize': 10,
+                    'alignment': 'left'}, viewer=(0, 0))
+
+    # === RIGHT PANEL: Dual Graph ===
+    viewer.addModel(mol_block, 'mol', viewer=(0, 1))
+    viewer.setStyle({'model': -1}, {'line': {'color': '#BDBDBD', 'width': 1}}, viewer=(0, 1))
+
+    # Add bond nodes with different colors for single/double
+    bond_positions = []
+    for bond in mol.GetBonds():
+        begin_pos = conf.GetAtomPosition(bond.GetBeginAtomIdx())
+        end_pos = conf.GetAtomPosition(bond.GetEndAtomIdx())
+
+        center = [(begin_pos.x + end_pos.x) / 2,
+                  (begin_pos.y + end_pos.y) / 2,
+                  (begin_pos.z + end_pos.z) / 2]
+        bond_positions.append(center)
+
+        is_double = bond.GetBondType() == Chem.rdchem.BondType.DOUBLE
+        color = '#F44336' if is_double else '#2196F3'
+
+        viewer.addSphere({'center': {'x': float(center[0]), 'y': float(center[1]), 'z': float(center[2])},
+                         'radius': 0.35, 'color': color, 'alpha': 0.9}, viewer=(0, 1))
+
+    # Build atom_to_bonds mapping for angle edges
+    atom_to_bonds = defaultdict(list)
+    for i, bond in enumerate(mol.GetBonds()):
+        atom_to_bonds[bond.GetBeginAtomIdx()].append(i)
+        atom_to_bonds[bond.GetEndAtomIdx()].append(i)
+
+    # Add angle edges and calculate angles
+    n_angle_edges = 0
+    angles = []
+
+    for atom_idx, bond_indices in atom_to_bonds.items():
+        for j in range(len(bond_indices)):
+            for k in range(j + 1, len(bond_indices)):
+                b1_idx = bond_indices[j]
+                b2_idx = bond_indices[k]
+                pos1 = bond_positions[b1_idx]
+                pos2 = bond_positions[b2_idx]
+
+                viewer.addCylinder({'start': {'x': float(pos1[0]), 'y': float(pos1[1]), 'z': float(pos1[2])},
+                                  'end': {'x': float(pos2[0]), 'y': float(pos2[1]), 'z': float(pos2[2])},
+                                  'radius': 0.06, 'color': 'black', 'alpha': 0.7}, viewer=(0, 1))
+                n_angle_edges += 1
+
+                # Calculate angle (simplified)
+                bond1 = mol.GetBondWithIdx(b1_idx)
+                bond2 = mol.GetBondWithIdx(b2_idx)
+
+                # Find shared atom
+                atoms1 = {bond1.GetBeginAtomIdx(), bond1.GetEndAtomIdx()}
+                atoms2 = {bond2.GetBeginAtomIdx(), bond2.GetEndAtomIdx()}
+                shared = atoms1 & atoms2
+
+                if shared:
+                    shared_idx = list(shared)[0]
+                    other1 = list(atoms1 - shared)[0]
+                    other2 = list(atoms2 - shared)[0]
+
+                    pos_shared = conf.GetAtomPosition(shared_idx)
+                    pos_other1 = conf.GetAtomPosition(other1)
+                    pos_other2 = conf.GetAtomPosition(other2)
+
+                    vec1 = np.array([pos_other1.x - pos_shared.x, pos_other1.y - pos_shared.y, pos_other1.z - pos_shared.z])
+                    vec2 = np.array([pos_other2.x - pos_shared.x, pos_other2.y - pos_shared.y, pos_other2.z - pos_shared.z])
+
+                    cos_angle = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+                    angle = np.degrees(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
+                    angles.append(angle)
+
+    mean_angle = np.mean(angles) if angles else 0
+
+    info_text_right = f"""DUAL GRAPH (H)
+
+Nodes: {n_bonds} (bonds)
+Edges: {n_angle_edges} (angles)
+
+CAPTURES:
+  Bond lengths
+  Bond types (as features)
+  Bond angles (~{mean_angle:.0f}deg avg)
+
+ENABLES:
+  Geometry-aware learning
+  Shape-based predictions
+  Better property models!"""
+
+    viewer.addLabel(info_text_right,
+                   {'position': {'x': 5, 'y': 2, 'z': 0},
+                    'backgroundColor': '#E8F5E9',
+                    'fontColor': 'black', 'fontSize': 10,
+                    'alignment': 'left'}, viewer=(0, 1))
+
+    viewer.zoomTo()
+
+    print("\nKEY COMPARISON:")
+    print(f"Traditional: {n_atoms} nodes, {n_bonds} edges (topology only)")
+    print(f"Dual:        {n_bonds} nodes, {n_angle_edges} edges (includes geometry!)")
+    print(f"\nThe dual graph has {n_angle_edges/n_bonds:.1f}x more edges per node, encoding angle information.")
+    print(f"Mean bond angle: {mean_angle:.1f} degrees")
+
+    return viewer
+
+# Create the side-by-side comparison
+comparison_viewer = create_side_by_side_comparison("CC(=O)O", "Acetic Acid")
+if comparison_viewer:
+    comparison_viewer.show()
+
+# + [markdown] id="dual-graph-3d-demo"
+# ### 3.5 Interactive 3D Dual Graph Demo
+#
+# Now let's create an interactive 3D demonstration that you can explore with any molecule:
 
 # + colab={"base_uri": "https://localhost:8080/", "height": 400} id="dual-graph-py3dmol"
-def create_dual_graph_3d_demo(smiles="CCC", molecule_name="Propane"):
+def create_dual_graph_3d_demo(smiles="CC(=O)O", molecule_name="Acetic Acid"):
     """
     Create an interactive 3D demonstration of dual graph concept using py3Dmol.
     Shows traditional graph and highlights how bonds become nodes.
+
+    Args:
+        smiles: SMILES string of the molecule (default: acetic acid)
+        molecule_name: Display name for the molecule
     """
     if not PY3DMOL_AVAILABLE:
         print("⚠️ py3Dmol not available - cannot create 3D dual graph demo")
@@ -342,12 +985,189 @@ def create_dual_graph_3d_demo(smiles="CCC", molecule_name="Propane"):
     return viewer
 
 # Create the 3D dual graph demo
-demo_viewer = create_dual_graph_3d_demo("CCC", "Propane")
+demo_viewer = create_dual_graph_3d_demo("CC(=O)O", "Acetic Acid")
 if demo_viewer:
     demo_viewer.show()
 
+# + [markdown] id="dihedral-preview-intro"
+# ### 3.6 Preview: Dihedral Angles and Conformational Flexibility
+#
+# So far we've focused on **bond angles** (3 atoms). But for molecules with 4+ atoms in a row,
+# we can also capture **dihedral angles** - the angle between two planes defined by 4 consecutive atoms.
+#
+# This is crucial for understanding:
+# - **Molecular conformations**: gauche vs anti arrangements
+# - **Rotational barriers**: energy required to rotate around bonds
+# - **Drug-receptor binding**: flexible molecules must adopt specific conformations
+#
+# Let's visualize this with **butane (CCCC)**, which has 4 carbons in a row:
+
+# + colab={"base_uri": "https://localhost:8080/", "height": 500} id="dihedral-preview-code"
+def visualize_dihedral_with_butane():
+    """
+    Demonstrate dihedral angles using butane (CCCC), which has
+    4 carbons in a row - perfect for showing 4-atom dihedral calculation.
+
+    Shows the C-C-C-C backbone and the planes that define the dihedral angle.
+
+    Returns:
+        py3Dmol viewer or None if py3Dmol is not available
+    """
+    if not PY3DMOL_AVAILABLE:
+        print("py3Dmol not available - cannot create dihedral visualization")
+        return None
+
+    print("Dihedral Angles Preview: Butane (CCCC)")
+    print("=" * 50)
+
+    # Create butane with 3D coordinates
+    smiles = "CCCC"
+    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.AddHs(mol)
+
+    params = AllChem.ETKDGv3()
+    params.randomSeed = 42
+    conf_id = AllChem.EmbedMolecule(mol, params)
+    if conf_id == -1:
+        print("Could not generate 3D coordinates")
+        return None
+    AllChem.MMFFOptimizeMolecule(mol)
+
+    mol_block = Chem.MolToMolBlock(mol)
+    conf = mol.GetConformer()
+
+    # Find the 4 carbons (they'll be indices 0-3)
+    carbon_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'C'][:4]
+
+    # Get positions of the 4 carbons
+    c_positions = []
+    for idx in carbon_indices:
+        pos = conf.GetAtomPosition(idx)
+        c_positions.append([pos.x, pos.y, pos.z])
+
+    # Calculate dihedral angle
+    p1, p2, p3, p4 = [np.array(p) for p in c_positions]
+
+    v1 = p2 - p1
+    v2 = p3 - p2
+    v3 = p4 - p3
+
+    n1 = np.cross(v1, v2)
+    n2 = np.cross(v2, v3)
+
+    n1_norm = n1 / np.linalg.norm(n1) if np.linalg.norm(n1) > 0 else n1
+    n2_norm = n2 / np.linalg.norm(n2) if np.linalg.norm(n2) > 0 else n2
+
+    cos_dihedral = np.dot(n1_norm, n2_norm)
+    dihedral_angle = np.degrees(np.arccos(np.clip(cos_dihedral, -1.0, 1.0)))
+
+    # Determine sign
+    if np.dot(np.cross(n1_norm, n2_norm), v2) < 0:
+        dihedral_angle = -dihedral_angle
+
+    print(f"\nButane has 4 carbons: C1-C2-C3-C4")
+    print(f"The dihedral angle (C1-C2-C3-C4) is: {dihedral_angle:.1f} degrees")
+    print(f"\nCommon conformations:")
+    print(f"  - Anti (180°): Most stable, hydrogens far apart")
+    print(f"  - Gauche (~60°): Less stable, some steric strain")
+    print(f"  - Eclipsed (0°): Least stable, high energy barrier")
+
+    # Create viewer
+    viewer = py3Dmol.view(width=1200, height=500, viewergrid=(1, 2))
+
+    # LEFT PANEL: Show the molecule with backbone highlighted
+    viewer.addModel(mol_block, 'mol', viewer=(0, 0))
+    viewer.setStyle({'model': -1}, {
+        'stick': {'colorscheme': 'Jmol', 'radius': 0.15},
+        'sphere': {'colorscheme': 'Jmol', 'scale': 0.25}
+    }, viewer=(0, 0))
+
+    # Highlight the C-C-C-C backbone
+    for i in range(len(c_positions)):
+        viewer.addSphere({'center': {'x': float(c_positions[i][0]),
+                                    'y': float(c_positions[i][1]),
+                                    'z': float(c_positions[i][2])},
+                         'radius': 0.5, 'color': '#F44336', 'alpha': 0.6}, viewer=(0, 0))
+
+    # Draw backbone connections
+    for i in range(len(c_positions) - 1):
+        viewer.addCylinder({'start': {'x': float(c_positions[i][0]),
+                                     'y': float(c_positions[i][1]),
+                                     'z': float(c_positions[i][2])},
+                          'end': {'x': float(c_positions[i+1][0]),
+                                 'y': float(c_positions[i+1][1]),
+                                 'z': float(c_positions[i+1][2])},
+                          'radius': 0.2, 'color': '#F44336', 'alpha': 0.8}, viewer=(0, 0))
+
+    viewer.addLabel(f'Butane: The 4-Carbon Backbone\n\nRed spheres = C1-C2-C3-C4\nThis defines our dihedral',
+                   {'position': {'x': 0, 'y': 4, 'z': 0},
+                    'backgroundColor': '#2196F3',
+                    'fontColor': 'white', 'fontSize': 11}, viewer=(0, 0))
+
+    # RIGHT PANEL: Show the planes
+    viewer.addModel(mol_block, 'mol', viewer=(0, 1))
+    viewer.setStyle({'model': -1}, {'line': {'color': 'lightgray', 'width': 1}}, viewer=(0, 1))
+
+    # Highlight the two planes with different colors
+    # Plane 1: C1-C2-C3 (blue)
+    plane1_center = np.mean([c_positions[0], c_positions[1], c_positions[2]], axis=0)
+    viewer.addSphere({'center': {'x': float(plane1_center[0]),
+                                'y': float(plane1_center[1]),
+                                'z': float(plane1_center[2])},
+                     'radius': 0.3, 'color': '#2196F3', 'alpha': 0.7}, viewer=(0, 1))
+
+    # Draw plane 1 bonds
+    for i in range(2):
+        viewer.addCylinder({'start': {'x': float(c_positions[i][0]),
+                                     'y': float(c_positions[i][1]),
+                                     'z': float(c_positions[i][2])},
+                          'end': {'x': float(c_positions[i+1][0]),
+                                 'y': float(c_positions[i+1][1]),
+                                 'z': float(c_positions[i+1][2])},
+                          'radius': 0.18, 'color': '#2196F3', 'alpha': 0.9}, viewer=(0, 1))
+
+    # Plane 2: C2-C3-C4 (green)
+    plane2_center = np.mean([c_positions[1], c_positions[2], c_positions[3]], axis=0)
+    viewer.addSphere({'center': {'x': float(plane2_center[0]),
+                                'y': float(plane2_center[1]),
+                                'z': float(plane2_center[2])},
+                     'radius': 0.3, 'color': '#4CAF50', 'alpha': 0.7}, viewer=(0, 1))
+
+    # Draw plane 2 bonds
+    for i in range(1, 3):
+        viewer.addCylinder({'start': {'x': float(c_positions[i][0]),
+                                     'y': float(c_positions[i][1]),
+                                     'z': float(c_positions[i][2])},
+                          'end': {'x': float(c_positions[i+1][0]),
+                                 'y': float(c_positions[i+1][1]),
+                                 'z': float(c_positions[i+1][2])},
+                          'radius': 0.18, 'color': '#4CAF50', 'alpha': 0.9}, viewer=(0, 1))
+
+    # Add dihedral angle label
+    center_pos = np.mean(c_positions, axis=0)
+    viewer.addLabel(f'Dihedral Angle: {abs(dihedral_angle):.0f}deg\n\nBlue = Plane 1 (C1-C2-C3)\nGreen = Plane 2 (C2-C3-C4)\n\nAngle between these planes!',
+                   {'position': {'x': float(center_pos[0]),
+                               'y': float(center_pos[1] + 3),
+                               'z': float(center_pos[2])},
+                    'backgroundColor': '#FF9800',
+                    'fontColor': 'white', 'fontSize': 11}, viewer=(0, 1))
+
+    viewer.zoomTo()
+
+    print(f"\nVisualization shows:")
+    print(f"  Left: Butane with C-C-C-C backbone highlighted")
+    print(f"  Right: The two planes that define the dihedral angle")
+    print(f"\nWe'll explore dihedrals in detail in Section 6!")
+
+    return viewer
+
+# Create dihedral preview
+dihedral_preview_viewer = visualize_dihedral_with_butane()
+if dihedral_preview_viewer:
+    dihedral_preview_viewer.show()
+
 # + [markdown] id="8hNh4BnQnQYL"
-# ### Mathematical Formulation
+# ### 3.7 Mathematical Formulation
 #
 # For a molecule with atoms A = {a₁, a₂, ..., aₙ} and bonds B = {b₁, b₂, ..., bₘ}:
 #

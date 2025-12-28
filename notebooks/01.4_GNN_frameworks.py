@@ -50,13 +50,13 @@
 # !pip install -q rdkit
 
 # PyTorch Geometric
-# !pip install -q torch torch-scatter torch-sparse torch-geometric
+# !pip install -q torch-geometric
 
 # Deep Graph Library (PyTorch backend)
-# !pip install -q dgl -f https://data.dgl.ai/wheels/torch-2.0/repo.html
+# !pip install -q dgl -f https://data.dgl.ai/wheels/torch-2.4/repo.html
 
 # JAX and Jraph
-# !pip install -q jax jaxlib jraph
+# !pip install -q jraph
 
 # + id="N_1gfxN7iJsO"
 #@title Import required libraries and check availability
@@ -110,16 +110,26 @@ except ImportError as e:
     print(f"DGL: Not available ({e})")
 
 # JAX and Jraph
+# Note: JAX on Colab with GPU can have initialization issues.
+# We force CPU backend for this tutorial since we're just demonstrating data structures.
 try:
+    import os
+    # Force JAX to use CPU to avoid GPU/CUDA version mismatch issues on Colab
+    os.environ['JAX_PLATFORMS'] = 'cpu'
+
     import jax
     import jax.numpy as jnp
     import jraph
     JRAPH_AVAILABLE = True
     print(f"Jraph: Available")
     print(f"  JAX version: {jax.__version__}")
+    print(f"  JAX backend: {jax.default_backend()}")
 except ImportError as e:
     JRAPH_AVAILABLE = False
     print(f"Jraph: Not available ({e})")
+except Exception as e:
+    JRAPH_AVAILABLE = False
+    print(f"Jraph: Error during initialization ({e})")
 
 print("\n" + "="*50)
 if all([TORCH_GEOMETRIC_AVAILABLE, DGL_AVAILABLE, JRAPH_AVAILABLE]):
@@ -385,37 +395,47 @@ plt.show()
 # + id="jax-demo"
 #@title Quick JAX demonstration
 if JRAPH_AVAILABLE:
-    print("JAX Basics Demonstration")
-    print("="*50)
+    try:
+        print("JAX Basics Demonstration")
+        print("="*50)
 
-    # jax.numpy works like numpy
-    x = jnp.array([1.0, 2.0, 3.0])
-    print(f"\n1. Creating arrays with jnp:")
-    print(f"   x = jnp.array([1.0, 2.0, 3.0])")
-    print(f"   x = {x}")
-    print(f"   Type: {type(x)}")
+        # jax.numpy works like numpy
+        x = jnp.array([1.0, 2.0, 3.0])
+        print(f"\n1. Creating arrays with jnp:")
+        print(f"   x = jnp.array([1.0, 2.0, 3.0])")
+        print(f"   x = {x}")
+        print(f"   Type: {type(x)}")
 
-    # Arrays are immutable
-    print(f"\n2. Arrays are immutable:")
-    print(f"   In NumPy: x[0] = 10  # This works")
-    print(f"   In JAX: x = x.at[0].set(10)  # Returns NEW array")
-    x_new = x.at[0].set(10)
-    print(f"   Original x: {x}")
-    print(f"   New array: {x_new}")
+        # Arrays are immutable
+        print(f"\n2. Arrays are immutable:")
+        print(f"   In NumPy: x[0] = 10  # This works")
+        print(f"   In JAX: x = x.at[0].set(10)  # Returns NEW array")
+        x_new = x.at[0].set(10)
+        print(f"   Original x: {x}")
+        print(f"   New array: {x_new}")
 
-    # JIT compilation
-    print(f"\n3. JIT Compilation:")
+        # JIT compilation
+        print(f"\n3. JIT Compilation:")
 
-    def slow_fn(x):
-        return jnp.sum(x ** 2)
+        def slow_fn(x):
+            return jnp.sum(x ** 2)
 
-    fast_fn = jax.jit(slow_fn)
+        fast_fn = jax.jit(slow_fn)
 
-    print(f"   slow_fn(x) = {slow_fn(x)}")
-    print(f"   fast_fn(x) = {fast_fn(x)}  # Same result, faster!")
+        print(f"   slow_fn(x) = {slow_fn(x)}")
+        print(f"   fast_fn(x) = {fast_fn(x)}  # Same result, faster!")
 
-    print("\n" + "="*50)
-    print("These concepts are important for understanding Jraph!")
+        print("\n" + "="*50)
+        print("These concepts are important for understanding Jraph!")
+
+    except Exception as e:
+        print(f"JAX demonstration failed: {e}")
+        print("\nThis can happen due to GPU/CUDA issues on Colab.")
+        print("The Jraph data structure examples below will still work!")
+        print("\nKey JAX concepts to know:")
+        print("  1. jax.numpy (jnp) is like numpy but with GPU/TPU support")
+        print("  2. JAX arrays are immutable (use x.at[i].set(v) to 'modify')")
+        print("  3. @jax.jit decorator compiles functions for speed")
 else:
     print("JAX not available. Install with: pip install jax jaxlib")
 
@@ -800,46 +820,50 @@ def create_jraph_graph(smiles: str):
 # + id="jraph-demo"
 #@title Demonstrate Jraph GraphsTuple
 if JRAPH_AVAILABLE:
-    # Create Jraph graph for Ethanol
-    jraph_graph = create_jraph_graph("CCO")
+    try:
+        # Create Jraph graph for Ethanol
+        jraph_graph = create_jraph_graph("CCO")
 
-    print("Jraph GraphsTuple for Ethanol")
-    print("="*50)
+        print("Jraph GraphsTuple for Ethanol")
+        print("="*50)
 
-    print(f"\n1. The GraphsTuple namedtuple:")
-    print(f"   Type: {type(jraph_graph)}")
-    print(f"   Fields: {jraph_graph._fields}")
+        print(f"\n1. The GraphsTuple namedtuple:")
+        print(f"   Type: {type(jraph_graph)}")
+        print(f"   Fields: {jraph_graph._fields}")
 
-    print(f"\n2. Node features (nodes):")
-    print(f"   Shape: {jraph_graph.nodes.shape}")
-    print(f"   Type: {type(jraph_graph.nodes)}")
-    print(f"   Access: jraph_graph.nodes")
+        print(f"\n2. Node features (nodes):")
+        print(f"   Shape: {jraph_graph.nodes.shape}")
+        print(f"   Type: {type(jraph_graph.nodes)}")
+        print(f"   Access: jraph_graph.nodes")
 
-    print(f"\n3. Edge connectivity (senders/receivers):")
-    print(f"   Senders shape: {jraph_graph.senders.shape}")
-    print(f"   Receivers shape: {jraph_graph.receivers.shape}")
-    print(f"   First 4 edges:")
-    print(f"   Senders (source):    {jraph_graph.senders[:4].tolist()}")
-    print(f"   Receivers (dest):    {jraph_graph.receivers[:4].tolist()}")
+        print(f"\n3. Edge connectivity (senders/receivers):")
+        print(f"   Senders shape: {jraph_graph.senders.shape}")
+        print(f"   Receivers shape: {jraph_graph.receivers.shape}")
+        print(f"   First 4 edges:")
+        print(f"   Senders (source):    {jraph_graph.senders[:4].tolist()}")
+        print(f"   Receivers (dest):    {jraph_graph.receivers[:4].tolist()}")
 
-    print(f"\n4. Edge features (edges):")
-    if jraph_graph.edges is not None:
-        print(f"   Shape: {jraph_graph.edges.shape}")
-    else:
-        print(f"   None (no edge features)")
+        print(f"\n4. Edge features (edges):")
+        if jraph_graph.edges is not None:
+            print(f"   Shape: {jraph_graph.edges.shape}")
+        else:
+            print(f"   None (no edge features)")
 
-    print(f"\n5. Batch information:")
-    print(f"   n_node: {jraph_graph.n_node}  (nodes per graph)")
-    print(f"   n_edge: {jraph_graph.n_edge}  (edges per graph)")
+        print(f"\n5. Batch information:")
+        print(f"   n_node: {jraph_graph.n_node}  (nodes per graph)")
+        print(f"   n_edge: {jraph_graph.n_edge}  (edges per graph)")
 
-    print(f"\n6. Graph-level features:")
-    print(f"   globals: {jraph_graph.globals}")
+        print(f"\n6. Graph-level features:")
+        print(f"   globals: {jraph_graph.globals}")
 
-    print(f"\n7. Key differences from PyG/DGL:")
-    print(f"   - Uses JAX arrays (jnp.array), not PyTorch tensors")
-    print(f"   - Named 'senders/receivers' instead of 'src/dst' or 'edge_index'")
-    print(f"   - n_node/n_edge arrays enable efficient batching")
-    print(f"   - Immutable structure (functional paradigm)")
+        print(f"\n7. Key differences from PyG/DGL:")
+        print(f"   - Uses JAX arrays (jnp.array), not PyTorch tensors")
+        print(f"   - Named 'senders/receivers' instead of 'src/dst' or 'edge_index'")
+        print(f"   - n_node/n_edge arrays enable efficient batching")
+        print(f"   - Immutable structure (functional paradigm)")
+    except Exception as e:
+        print(f"Jraph demonstration failed: {e}")
+        print("This can happen due to JAX/GPU issues. See Section 4 notes.")
 else:
     print("Jraph not available")
 
@@ -920,8 +944,11 @@ def compare_frameworks(smiles: str, molecule_name: str = "Molecule"):
 
     # Jraph
     if JRAPH_AVAILABLE:
-        jraph_graph = create_jraph_graph(smiles)
-        results['jraph'] = jraph_graph
+        try:
+            jraph_graph = create_jraph_graph(smiles)
+            results['jraph'] = jraph_graph
+        except Exception as e:
+            print(f"Note: Jraph creation failed ({e}). Skipping Jraph comparison.")
 
     return results
 
@@ -968,7 +995,7 @@ if DGL_AVAILABLE:
         'Dictionary-based'
     ]
 
-if JRAPH_AVAILABLE:
+if JRAPH_AVAILABLE and 'jraph' in comparison:
     data['Jraph'] = [
         'graph.nodes',
         'senders, receivers',
@@ -1021,7 +1048,7 @@ ax2.set_title('DGL: g.edges()\nReturns (src, dst) tuple')
 
 # Jraph style
 ax3 = axes[2]
-if JRAPH_AVAILABLE:
+if JRAPH_AVAILABLE and 'jraph' in comparison:
     jraph_display = np.vstack([
         comparison['jraph'].senders[:6],
         comparison['jraph'].receivers[:6]
@@ -1034,7 +1061,11 @@ if JRAPH_AVAILABLE:
     ax3.set_yticklabels(['Senders', 'Receivers'])
     ax3.set_xticks(range(6))
     ax3.set_xticklabels([f'E{i}' for i in range(6)])
-ax3.set_title('Jraph: senders/receivers\nSeparate arrays')
+    ax3.set_title('Jraph: senders/receivers\nSeparate arrays')
+else:
+    ax3.text(0.5, 0.5, 'Jraph not available\n(JAX/GPU issue)', ha='center', va='center',
+             transform=ax3.transAxes, fontsize=12)
+    ax3.set_title('Jraph: senders/receivers\n(unavailable)')
 
 plt.tight_layout()
 plt.show()
@@ -1250,23 +1281,27 @@ if TORCH_GEOMETRIC_AVAILABLE and DGL_AVAILABLE:
         print("Edge features preserved!")
 
 if TORCH_GEOMETRIC_AVAILABLE and JRAPH_AVAILABLE:
-    print("\n" + "="*40)
-    print("Testing PyG <-> Jraph conversion")
-    print("="*40)
+    try:
+        print("\n" + "="*40)
+        print("Testing PyG <-> Jraph conversion")
+        print("="*40)
 
-    # Create PyG data
-    pyg_original = create_pyg_data("CCO")
-    print(f"Original PyG: {pyg_original.num_nodes} nodes, {pyg_original.num_edges} edges")
+        # Create PyG data
+        pyg_original = create_pyg_data("CCO")
+        print(f"Original PyG: {pyg_original.num_nodes} nodes, {pyg_original.num_edges} edges")
 
-    # Convert to Jraph
-    jraph_converted = pyg_to_jraph(pyg_original)
-    print(f"Converted Jraph: {int(jraph_converted.n_node[0])} nodes, {int(jraph_converted.n_edge[0])} edges")
+        # Convert to Jraph
+        jraph_converted = pyg_to_jraph(pyg_original)
+        print(f"Converted Jraph: {int(jraph_converted.n_node[0])} nodes, {int(jraph_converted.n_edge[0])} edges")
 
-    # Convert back to PyG
-    pyg_roundtrip = jraph_to_pyg(jraph_converted)
-    print(f"Roundtrip PyG: {pyg_roundtrip.num_nodes} nodes, {pyg_roundtrip.num_edges} edges")
+        # Convert back to PyG
+        pyg_roundtrip = jraph_to_pyg(jraph_converted)
+        print(f"Roundtrip PyG: {pyg_roundtrip.num_nodes} nodes, {pyg_roundtrip.num_edges} edges")
 
-    print("\nConversions successful!")
+        print("\nConversions successful!")
+    except Exception as e:
+        print(f"\nPyG <-> Jraph conversion failed: {e}")
+        print("This is likely due to JAX initialization issues on GPU.")
 
 # + [markdown] id="practical-example-section"
 # ## 11. Practical Example: Multiple Molecules <a name="practical-example"></a>

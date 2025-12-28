@@ -45,7 +45,7 @@ These notebooks (01.1, 01.2, ...) provide **additional details and advanced topi
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see [CONTRIBUTIONS.md](CONTRIBUTIONS.md) for guidelines on how to contribute.
 
 ## License
 

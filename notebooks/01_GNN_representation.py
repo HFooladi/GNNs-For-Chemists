@@ -405,6 +405,99 @@ mol, adj_matrix, node_features, atoms = show_molecule_to_graph_conversion(methan
 #
 # 3. **Question**: How would the graph representation change for a molecule with a double bond?
 #    - **Answer**: The edge feature for that bond would have a 1 in the position representing double bonds instead of single bonds.
+# -
+
+# ### 🏋️ Exercise 1: Build the Graph Representation for Ethane
+#
+# Now it's your turn! Ethane (C₂H₆) is the simplest hydrocarbon with a carbon-carbon bond.
+# It has **8 atoms** (2 carbons and 6 hydrogens) and **7 bonds** (1 C-C and 6 C-H).
+#
+# ```
+#        H   H
+#        |   |
+#   H -- C - C -- H
+#        |   |
+#        H   H
+# ```
+#
+# Using the same approach we used for methanol, manually construct:
+# 1. The **node feature matrix** (8 atoms × 3 atom types, using columns [H, O, C])
+# 2. The **adjacency matrix** (8 × 8)
+# 3. The **edge feature matrix** (7 bonds × 4 bond types)
+# 4. Visualize the graph using `visualize_molecular_graph()`
+
+# +
+# Exercise 1: Build the graph representation for ethane (C2H6)
+# Atom ordering: H, H, H, C, C, H, H, H (indices 0-7)
+# Atom mapping (same as methanol): {'H': 0, 'O': 1, 'C': 2}
+
+# Step 1: Node feature matrix (8 atoms, 3 atom types: H, O, C)
+ethane_node_features = np.zeros((8, 3))
+# TODO: Fill in the node features using one-hot encoding
+# Hint: Atoms 0,1,2 are H; atom 3 is C; atom 4 is C; atoms 5,6,7 are H
+
+
+# Step 2: Adjacency matrix (8 x 8)
+ethane_adjacency = np.zeros((8, 8))
+# TODO: Define the bonds and fill the adjacency matrix
+# Hint: There are 7 bonds - 3 H-C bonds on each carbon, plus 1 C-C bond
+ethane_bonds = [
+    # TODO: List the (i, j) pairs for each bond
+]
+
+
+# Step 3: Edge feature matrix (7 bonds, 4 bond types: single, double, triple, aromatic)
+ethane_edge_features = np.zeros((7, 4))
+# TODO: Fill in the edge features (all bonds in ethane are single bonds)
+
+
+# Step 4: Visualize the graph
+ethane_atom_labels = ['H', 'H', 'H', 'C', 'C', 'H', 'H', 'H']
+# TODO: Call visualize_molecular_graph() with the adjacency matrix and labels
+
+
+# -------------------------------------------------------------------
+# SOLUTION (uncomment to check your work):
+# -------------------------------------------------------------------
+# # Step 1: Node features
+# ethane_node_features[0, 0] = 1  # H
+# ethane_node_features[1, 0] = 1  # H
+# ethane_node_features[2, 0] = 1  # H
+# ethane_node_features[3, 2] = 1  # C
+# ethane_node_features[4, 2] = 1  # C
+# ethane_node_features[5, 0] = 1  # H
+# ethane_node_features[6, 0] = 1  # H
+# ethane_node_features[7, 0] = 1  # H
+#
+# # Step 2: Adjacency matrix
+# ethane_bonds = [
+#     (0, 3),  # H0-C0
+#     (1, 3),  # H1-C0
+#     (2, 3),  # H2-C0
+#     (3, 4),  # C0-C1
+#     (4, 5),  # C1-H3
+#     (4, 6),  # C1-H4
+#     (4, 7),  # C1-H5
+# ]
+# for i, j in ethane_bonds:
+#     ethane_adjacency[i, j] = 1
+#     ethane_adjacency[j, i] = 1
+#
+# # Step 3: Edge features (all single bonds)
+# ethane_edge_features[:, 0] = 1
+#
+# # Step 4: Visualize
+# visualize_molecular_graph(ethane_adjacency, ethane_atom_labels)
+#
+# # Display the matrices
+# print("Node Feature Matrix:")
+# display(pd.DataFrame(ethane_node_features,
+#                       index=[f'{l}{i}' for i, l in enumerate(ethane_atom_labels)],
+#                       columns=['H', 'O', 'C']))
+# print("\nAdjacency Matrix:")
+# display(pd.DataFrame(ethane_adjacency,
+#                       index=[f'{l}{i}' for i, l in enumerate(ethane_atom_labels)],
+#                       columns=[f'{l}{i}' for i, l in enumerate(ethane_atom_labels)]))
 
 # + [markdown] id="zn8cSorXv7SI"
 # ## 4. Implementing Molecular Graph Representations <a name="implementing-molecular-graph-representations"></a>
@@ -832,6 +925,87 @@ print(f"Feature vector: {aspirin_features[0]}")
 # 1. Create and visualize the graph representation for ethanol (CCO).
 # 2. Compare the adjacency matrices of methanol and ethanol. What differences do you observe?
 # 3. Implement graph representation for a molecule with a ring structure, such as cyclohexane (C1CCCCC1). How does the adjacency matrix change when there are cycles in the molecule?
+# -
+
+# ### 🏋️ Exercise 2: Converting Adjacency Matrix to COO Edge List
+#
+# In the next section, we'll use PyTorch Geometric (PyG), which stores graph connectivity
+# in **COO (Coordinate) format** instead of an adjacency matrix. Before diving in, let's
+# practice this conversion by hand.
+#
+# **COO format** stores edges as two lists:
+# - A **source** list with the starting node of each edge
+# - A **target** list with the ending node of each edge
+#
+# For example, if atoms 0 and 3 are bonded, the COO format contains:
+# ```
+# source: [..., 0, ..., 3, ...]
+# target: [..., 3, ..., 0, ...]
+# ```
+# Note: each undirected bond appears **twice** (once in each direction).
+#
+# **Your task:**
+# 1. Convert the methanol adjacency matrix (from Section 3) to COO edge lists
+# 2. Think about why COO is more memory-efficient for molecular graphs
+# 3. Verify your answer against the automated conversion
+
+# +
+# Exercise 2: Adjacency matrix to COO edge list conversion
+
+# Here is methanol's adjacency matrix from Section 3
+# Atom order: H0, H1, H2, C3, O4, H5
+methanol_adj = np.zeros((6, 6))
+methanol_bonds = [(0, 3), (1, 3), (2, 3), (3, 4), (4, 5)]
+for i, j in methanol_bonds:
+    methanol_adj[i, j] = 1
+    methanol_adj[j, i] = 1
+
+print("Methanol adjacency matrix:")
+print(methanol_adj.astype(int))
+print()
+
+# TODO: Manually write out the COO edge lists for methanol.
+# Remember: each undirected bond appears twice (both directions).
+# source_nodes = [...]
+# target_nodes = [...]
+
+# Then think about these questions:
+# - How many entries does the adjacency matrix have in total? (6 x 6 = 36)
+# - How many of those are non-zero? (count the 1s)
+# - How many entries does the COO format need? (2 x number of directed edges)
+# - For a large molecule with 100 atoms and 105 bonds, which format uses less memory?
+
+# -------------------------------------------------------------------
+# SOLUTION (uncomment to check your work):
+# -------------------------------------------------------------------
+# # Each undirected bond gives two directed edges:
+# source_nodes = [0, 3, 1, 3, 2, 3, 3, 4, 4, 5]
+# target_nodes = [3, 0, 3, 1, 3, 2, 4, 3, 5, 4]
+#
+# print("COO edge list (manually constructed):")
+# print(f"Source: {source_nodes}")
+# print(f"Target: {target_nodes}")
+# print(f"\nNumber of directed edges: {len(source_nodes)}")
+# print()
+#
+# # Verify: convert adjacency matrix automatically
+# rows, cols = np.where(methanol_adj == 1)
+# print("COO edge list (from adjacency matrix):")
+# print(f"Source: {rows.tolist()}")
+# print(f"Target: {cols.tolist()}")
+# print()
+#
+# # Memory comparison
+# n_atoms = 6
+# n_bonds = 5
+# adj_entries = n_atoms * n_atoms  # 36
+# coo_entries = 2 * n_bonds * 2    # 20 (2 lists x 10 directed edges)
+# print(f"Adjacency matrix entries: {adj_entries}")
+# print(f"COO format entries:       {coo_entries}")
+# print(f"\nFor a molecule with 100 atoms and 105 bonds:")
+# print(f"  Adjacency: {100*100} entries")
+# print(f"  COO:       {2 * 105 * 2} entries")
+# print(f"  COO uses {2*105*2 / (100*100) * 100:.1f}% of the memory!")
 
 # + [markdown] id="ZhzvT4yarsSp"
 # ## 5. PyTorch Geometric for Molecular Graphs <a name="pytorch-geometric-for-molecular-graphs"></a>

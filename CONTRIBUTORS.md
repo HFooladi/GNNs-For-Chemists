@@ -12,6 +12,17 @@ We welcome contributions from the community! Here's how you can help:
 3. Make your changes
 4. Submit a **pull request**
 
+### Setting Up Development Environment
+
+After cloning the repository, install pre-commit hooks:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+This ensures notebooks are automatically cleaned (outputs stripped) and kept in sync with their `.py` counterparts on every commit.
+
 ### Types of Contributions We're Looking For
 
 - Bug fixes and improvements

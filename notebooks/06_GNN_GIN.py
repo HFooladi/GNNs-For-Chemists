@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.18.1
 #   kernelspec:
 #     display_name: pytorch
 #     language: python
@@ -24,16 +24,16 @@
 # 3. [Understanding Molecular Graphs and Isomorphism](#understanding-molecular-graphs-and-isomorphism)
 # 4. [The Theory Behind Graph Isomorphism Networks (GIN)](#theory-behind-gin)
 # 5. [Implementing a GIN Model for Molecules](#implementing-a-gin-model-for-molecules)
-# 6. [Training and Evaluation](#training-and-evaluation)
-# 7. [Visualization and Interpretation](#visualization-interpretation)
-# 8. [Ablation Studies: Understanding GIN Components](#ablation-studies-understanding-gin-components)
+# 6. [Training GIN for Molecular Property Prediction](#training-gin-for-molecular-property-prediction)
+# 7. [GIN for Molecular Fingerprinting](#gin-for-molecular-fingerprinting)
+# 8. [Analyzing Isomorphic vs. Non-Isomorphic Molecule Pairs](#analyzing-isomorphic-vs-non-isomorphic-molecule-pairs)
 # 9. [Interpreting GIN Embeddings for Chemical Insights](#interpreting-gin-embeddings-for-chemical-insights)
 # 10. [Ablation Studies: Understanding GIN Components](#ablation-studies-understanding-gin-components)
 # 11. [Practical Applications in Drug Discovery](#practical-applications-in-drug-discovery)
 # 12. [Conclusion and Best Practices](#conclusion-and-best-practices)
 #
-# -
 
+# + [markdown] id="O5o21TjeX47a"
 # ## 1. Introduction <a name="introduction"></a>
 #
 # Graph Isomorphism Networks (GINs) are a powerful class of Graph Neural Networks designed to maximize the discriminative power when differentiating graph structures. This makes them particularly valuable for molecular applications, where subtle structural differences between molecules can lead to completely different chemical properties.
@@ -950,20 +950,20 @@ def train_and_evaluate(model, optimizer, train_loader, val_loader, test_loader, 
         model.train()
         total_loss = 0
         total_samples = 0
-        
+
         for data in train_loader:
             optimizer.zero_grad()
             data = data.to(device)
 
             out = model(data.x.float(), data.edge_index, data.batch)
-            
+
             # Ensure output and target have the same batch size
             if out.size(0) != data.y.size(0):
                 # If sizes don't match, use the minimum size
                 min_size = min(out.size(0), data.y.size(0))
                 out = out[:min_size]
                 data.y = data.y[:min_size]
-            
+
             loss = criterion(out, data.y)
             loss.backward()
             optimizer.step()
@@ -985,13 +985,13 @@ def train_and_evaluate(model, optimizer, train_loader, val_loader, test_loader, 
             for data in val_loader:
                 data = data.to(device)
                 out = model(data.x.float(), data.edge_index, data.batch)
-                
+
                 # Ensure output and target have the same batch size
                 if out.size(0) != data.y.size(0):
                     min_size = min(out.size(0), data.y.size(0))
                     out = out[:min_size]
                     data.y = data.y[:min_size]
-                
+
                 loss = criterion(out, data.y)
                 val_loss += loss.item() * data.num_graphs
                 val_samples += data.num_graphs
@@ -1029,13 +1029,13 @@ def train_and_evaluate(model, optimizer, train_loader, val_loader, test_loader, 
         for data in test_loader:
             data = data.to(device)
             out = model(data.x.float(), data.edge_index, data.batch)
-            
+
             # Ensure output and target have the same batch size
             if out.size(0) != data.y.size(0):
                 min_size = min(out.size(0), data.y.size(0))
                 out = out[:min_size]
                 data.y = data.y[:min_size]
-            
+
             y_true.append(data.y.cpu().numpy())
             y_pred.append(torch.sigmoid(out).cpu().numpy())
 
@@ -1176,7 +1176,7 @@ def generate_molecule_embeddings(model, dataset, device, batch_size=32):
 
                 if hasattr(data, 'smiles'):
                     smiles_list.extend(data.smiles)
-                
+
                 del data
                 torch.cuda.empty_cache()  # If using CUDA
             except Exception as e:

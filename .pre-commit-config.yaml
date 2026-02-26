@@ -1,0 +1,15 @@
+repos:
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.8.2
+    hooks:
+      - id: nbstripout
+        files: 'notebooks/.*\.ipynb$'
+
+  - repo: https://github.com/mwouts/jupytext
+    rev: v1.18.1
+    hooks:
+      - id: jupytext
+        args: ["--sync"]
+        files: 'notebooks/.*\.(py|ipynb)$'
+        exclude: 'notebooks/(utils/|py3dmol_examples\.py)'
+        additional_dependencies: ['jupytext>=1.16']

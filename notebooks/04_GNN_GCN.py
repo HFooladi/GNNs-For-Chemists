@@ -5,13 +5,13 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.18.1
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
 # ---
 
-# + [markdown] id="view-in-github" colab_type="text"
+# + [markdown] colab_type="text" id="view-in-github"
 # <a href="https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/04_GNN_GCN.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # + [markdown] id="YxtQeGH8EV9G"
@@ -47,20 +47,20 @@
 #
 # First, let's install the necessary packages:
 
-# + colab={"base_uri": "https://localhost:8080/"} id="Nv12bZ74EW4-" outputId="648ae681-9b6b-4ba2-e7b4-253c7fc05c80" cellView="form"
+# + cellView="form" colab={"base_uri": "https://localhost:8080/"} id="Nv12bZ74EW4-" outputId="648ae681-9b6b-4ba2-e7b4-253c7fc05c80"
 #@title Intstall necessary libraries
 import os
 import torch
 os.environ['TORCH'] = torch.__version__
 print(torch.__version__)
 
-## !pip install -q torch-scatter -f https://data.pyg.org/whl/torch-${TORCH}.html
-## !pip install -q torch-sparse -f https://data.pyg.org/whl/torch-${TORCH}.html
+# # !pip install -q torch-scatter -f https://data.pyg.org/whl/torch-${TORCH}.html
+# # !pip install -q torch-sparse -f https://data.pyg.org/whl/torch-${TORCH}.html
 # !pip install -q torch_geometric
 # !pip install -q rdkit
 # !pip install -q networkx
 
-# + id="CBrxhtgZEgTn" outputId="8c9d6402-5991-4235-ef88-61f1cf6015d4" colab={"base_uri": "https://localhost:8080/"} cellView="form"
+# + cellView="form" colab={"base_uri": "https://localhost:8080/"} id="CBrxhtgZEgTn" outputId="8c9d6402-5991-4235-ef88-61f1cf6015d4"
 #@title Import libraries
 import torch
 import torch.nn as nn
@@ -100,7 +100,7 @@ print(f"Using device: {device}")
 #
 # Let's start by visualizing molecules as graphs, which is essential for understanding how GCNs process molecular data.
 
-# + id="c8TTL91rEwUV" outputId="41a0a84a-0a31-474e-909c-4717cd0c8899" colab={"base_uri": "https://localhost:8080/", "height": 1000}
+# + colab={"base_uri": "https://localhost:8080/", "height": 1000} id="c8TTL91rEwUV" outputId="41a0a84a-0a31-474e-909c-4717cd0c8899"
 def atom_features(atom):
     """
     Extract a feature vector for an RDKit atom.
@@ -285,7 +285,7 @@ for name, smiles in example_molecules.items():
 #
 # Now that we understand how molecules are represented as graphs, let's explore the basic concepts of Graph Convolutional Networks.
 
-# + id="nNrWMQqNEz_2" outputId="9ed49417-1703-4b1f-884b-2c2251a9fd95" colab={"base_uri": "https://localhost:8080/", "height": 507}
+# + colab={"base_uri": "https://localhost:8080/", "height": 507} id="nNrWMQqNEz_2" outputId="9ed49417-1703-4b1f-884b-2c2251a9fd95"
 # Create a simple visualization of GCN message passing
 def visualize_gcn_message_passing():
     """
@@ -385,7 +385,7 @@ visualize_gcn_message_passing()
 #
 # Let's implement a basic GCN for molecular property prediction:
 
-# + id="7Sbx2-aCE_pG" outputId="10962654-1078-4d83-9ebd-e4e1dd84251b" colab={"base_uri": "https://localhost:8080/"}
+# + colab={"base_uri": "https://localhost:8080/"} id="7Sbx2-aCE_pG" outputId="10962654-1078-4d83-9ebd-e4e1dd84251b"
 class BasicGCN(nn.Module):
     """
     A basic Graph Convolutional Network (GCN) for graph-level prediction.
@@ -459,7 +459,7 @@ print(model)
 #
 # Now let's compare the effect of different pooling methods: max, sum, and mean pooling.
 
-# + id="_du1U0n2FDKE" outputId="e7066c0a-addb-4e77-b5cf-2a0c5aa30e5e" colab={"base_uri": "https://localhost:8080/", "height": 1000}
+# + colab={"base_uri": "https://localhost:8080/", "height": 1000} id="_du1U0n2FDKE" outputId="e7066c0a-addb-4e77-b5cf-2a0c5aa30e5e"
 class GCNWithPooling(nn.Module):
     """
     A GCN model that supports different global pooling strategies.
@@ -608,7 +608,7 @@ visualize_pooling_operations()
 #
 # Let's understand how different pooling methods impact results for molecular property prediction:
 
-# + id="_DI99KP4FI_E" outputId="17ea4af8-9054-4efe-8457-86f2f4ad7b6c" colab={"base_uri": "https://localhost:8080/", "height": 1000}
+# + colab={"base_uri": "https://localhost:8080/", "height": 1000} id="_DI99KP4FI_E" outputId="17ea4af8-9054-4efe-8457-86f2f4ad7b6c"
 # Load a dataset from MoleculeNet
 print("Loading ESOL dataset (water solubility data)...")
 dataset = MoleculeNet(root='data', name='ESOL')
@@ -822,7 +822,7 @@ plt.show()
 #
 # Now, let's investigate how the number of GCN layers affects model performance:
 
-# + id="vrSPTQFFFP1L" outputId="ab0bc81b-962e-4da6-c28b-bfe247a97ff2" colab={"base_uri": "https://localhost:8080/", "height": 1000}
+# + colab={"base_uri": "https://localhost:8080/", "height": 1000} id="vrSPTQFFFP1L" outputId="ab0bc81b-962e-4da6-c28b-bfe247a97ff2"
 class VariableDepthGCN(nn.Module):
     """
     A Graph Convolutional Network (GCN) with a variable number of layers.
@@ -1051,7 +1051,7 @@ plt.show()
 #
 # Skip (or residual) connections allow information to flow directly from earlier layers to later layers, bypassing intermediate operations. Let's explore how they can improve GCN performance:
 
-# + id="2VFh6smOG7aH" outputId="2272da26-ae68-47c3-88fb-3c6e27e37465" colab={"base_uri": "https://localhost:8080/", "height": 1000}
+# + colab={"base_uri": "https://localhost:8080/", "height": 1000} id="2VFh6smOG7aH" outputId="2272da26-ae68-47c3-88fb-3c6e27e37465"
 class GCNWithSkipConnections(nn.Module):
     """
     Graph Convolutional Network (GCN) with optional residual (skip) connections.
@@ -1333,7 +1333,7 @@ plt.show()
 #
 # Let's now visualize how node features evolve through the GCN layers, with and without skip connections:
 
-# + id="TxR42aELHE6m" outputId="12ff9c9f-0e9c-4f4a-a65c-294504471e8b" colab={"base_uri": "https://localhost:8080/", "height": 1000}
+# + colab={"base_uri": "https://localhost:8080/", "height": 1000} id="TxR42aELHE6m" outputId="12ff9c9f-0e9c-4f4a-a65c-294504471e8b"
 def visualize_feature_evolution(model, data, smiles, use_skip=False):
     """
     Visualize how node features transform across GCN layers using t-SNE.
@@ -1513,7 +1513,7 @@ plt.show()
 # + [markdown] id="z_emMuDEHVG1"
 # ## 11. Conclusion and Comprehensive Findings <a name="conclusion"></a>
 
-# + id="CxqL9wShHXk1" outputId="198342c9-0e64-4f5c-dff4-bea1398389fe" colab={"base_uri": "https://localhost:8080/", "height": 944}
+# + colab={"base_uri": "https://localhost:8080/", "height": 944} id="CxqL9wShHXk1" outputId="198342c9-0e64-4f5c-dff4-bea1398389fe"
 def summarize_findings():
     """Create a visual summary of our findings about GCNs"""
     plt.figure(figsize=(12, 10))
@@ -1575,7 +1575,7 @@ summarize_findings()
 # 3. **Oversmoothing**: Li et al., "Deeper Insights into Graph Convolutional Networks for Semi-Supervised Learning" (2018)
 # 4. **Skip Connections**: Xu et al., "Representation Learning on Graphs with Jumping Knowledge Networks" (2018)
 
-# + id="B-Mc-KgAHdP9" outputId="e8554550-5755-464d-c2a3-7598773a9263" colab={"base_uri": "https://localhost:8080/", "height": 824}
+# + colab={"base_uri": "https://localhost:8080/", "height": 824} id="B-Mc-KgAHdP9" outputId="e8554550-5755-464d-c2a3-7598773a9263"
 def create_resources_visualization():
     """Create a visual guide to GCN resources"""
     fig, ax = plt.subplots(figsize=(12, 8))

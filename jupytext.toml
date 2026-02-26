@@ -1,0 +1,1 @@
+formats = "notebooks//ipynb,notebooks//py:light"

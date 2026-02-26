@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.18.1
 #   kernelspec:
 #     display_name: pytorch
 #     language: python
@@ -39,8 +39,8 @@ import torch
 os.environ['TORCH'] = torch.__version__
 print(torch.__version__)
 
-## !pip install -q torch-scatter -f https://data.pyg.org/whl/torch-${TORCH}.html
-## !pip install -q torch-sparse -f https://data.pyg.org/whl/torch-${TORCH}.html
+# # !pip install -q torch-scatter -f https://data.pyg.org/whl/torch-${TORCH}.html
+# # !pip install -q torch-sparse -f https://data.pyg.org/whl/torch-${TORCH}.html
 # !pip install -q torch_geometric
 # !pip install -q rdkit
 # !pip install -q networkx

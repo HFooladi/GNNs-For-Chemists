@@ -542,6 +542,23 @@ def visualize_conformational_concept():
 
 visualize_conformational_concept()
 
+# + [markdown] id="checkpoint-conformers-3d"
+# ### ✅ Checkpoint: Understanding Conformers and 3D Structure
+#
+# To reinforce your understanding, try answering these questions:
+#
+# 1. **Question**: What is the difference between a constitutional isomer and a conformer?
+#    - **Answer**: Constitutional isomers have different atomic connectivity (different bonds), making them distinct molecules. Conformers have identical connectivity but different 3D arrangements of atoms, achieved by rotation around single bonds — they are the same molecule in different shapes.
+#
+# 2. **Question**: Why can't a 2D molecular graph distinguish between R-2-butanol and S-2-butanol?
+#    - **Answer**: Both enantiomers have identical atoms, identical bonds, and identical connectivity. A 2D graph only encodes which atoms are bonded to which, so it produces the same adjacency matrix and node features for both. Only 3D coordinates can capture the different spatial arrangements around the chiral center.
+#
+# 3. **Question**: A flexible molecule like pentanol has multiple low-energy conformers. If you used a single conformer to build a 3D molecular graph, what information might you lose?
+#    - **Answer**: You would lose information about the molecule's conformational flexibility — the range of shapes it can adopt. Different conformers may have different surface areas, binding properties, and interaction patterns. A single snapshot misses the dynamic ensemble of conformations the molecule samples at room temperature.
+#
+# 4. **Question**: In the conformational energy profile, what determines which conformers are most populated at room temperature?
+#    - **Answer**: The Boltzmann distribution determines conformer populations. Conformers at energy minima (low-energy stable states) are most populated. The population decreases exponentially with energy relative to the global minimum, scaled by kT (thermal energy at room temperature, about 0.593 kcal/mol at 298K).
+
 # + [markdown] id="esDZEn1lsUUr"
 # ## 4. Generating 3D Molecular Conformations <a name="generating-3d-molecular-conformations"></a>
 #
@@ -720,6 +737,80 @@ try:
         
 except Exception as e:
     print(f"Error: {e}")
+
+# + [markdown] id="exercise-1-conformer-generation"
+# ### 🏋️ Exercise 1: Explore Conformational Diversity of Butane
+#
+# Butane (SMILES: `CCCC`) is a simple molecule with one key rotatable C-C bond in the middle.
+# Despite its simplicity, it can adopt distinct conformations: anti (extended), gauche (folded),
+# and eclipsed (high energy).
+#
+# Using the functions defined above:
+# 1. Generate a single optimized 3D conformer of butane
+# 2. Generate 10 conformers and examine their energy distribution
+# 3. Calculate the energy spread and identify how many distinct low-energy conformers exist
+# 4. Determine what fraction of the population the lowest-energy conformer represents at 298K
+
+# +
+# Exercise 1: Conformational diversity of butane
+butane_smiles = "CCCC"
+
+# Step 1: Generate a single conformer
+# TODO: Use generate_3d_conformer() to create a 3D conformer of butane
+single_conformer = None
+
+# Step 2: Generate multiple conformers
+# TODO: Use generate_multiple_conformers() with n_conformers=10
+multi_mol = None
+energies = []
+
+# Step 3: Analyze the energy distribution
+# TODO: Sort the energies and calculate the spread (max - min)
+# TODO: Count how many conformers are within 1 kcal/mol of the lowest energy
+energy_spread = 0.0
+n_low_energy = 0
+
+# Step 4: Calculate Boltzmann population of the lowest-energy conformer
+# Hint: kT = 0.593 kcal/mol at 298K
+# Hint: population_i = exp(-deltaE_i / kT) / sum(exp(-deltaE_j / kT))
+kT = 0.593
+lowest_population = 0.0
+
+print(f"Energy spread: {energy_spread:.2f} kcal/mol")
+print(f"Conformers within 1 kcal/mol of minimum: {n_low_energy}")
+print(f"Lowest-energy conformer population: {lowest_population*100:.1f}%")
+
+# -------------------------------------------------------------------
+# SOLUTION (uncomment to check your work):
+# -------------------------------------------------------------------
+# # Step 1: Single conformer
+# single_conformer = generate_3d_conformer(butane_smiles)
+# print(f"Single conformer atoms: {single_conformer.GetNumAtoms()}")
+# print(f"Single conformer bonds: {single_conformer.GetNumBonds()}")
+# print()
+#
+# # Step 2: Multiple conformers
+# multi_mol, energies = generate_multiple_conformers(butane_smiles, n_conformers=10)
+# print(f"Generated {len(energies)} conformers")
+# print()
+#
+# # Step 3: Energy distribution
+# sorted_energies = np.sort(energies)
+# energy_spread = sorted_energies[-1] - sorted_energies[0]
+# n_low_energy = np.sum(np.array(sorted_energies) - sorted_energies[0] < 1.0)
+# print(f"Energy spread: {energy_spread:.2f} kcal/mol")
+# print(f"Conformers within 1 kcal/mol of minimum: {n_low_energy}")
+# print()
+#
+# # Step 4: Boltzmann populations
+# kT = 0.593
+# relative_energies = sorted_energies - sorted_energies[0]
+# exp_factors = np.exp(-relative_energies / kT)
+# populations = exp_factors / np.sum(exp_factors)
+# lowest_population = populations[0]
+# print(f"Lowest-energy conformer population: {lowest_population*100:.1f}%")
+# for i in range(min(5, len(populations))):
+#     print(f"  Conformer {i}: ΔE = {relative_energies[i]:.2f} kcal/mol, population = {populations[i]*100:.1f}%")
 
 # + [markdown] id="mXkhsu7myPUC"
 # ## 5. 3D Graph Construction from Conformers <a name="3d-graph-construction-from-conformers"></a>
@@ -1049,6 +1140,80 @@ for cutoff in cutoff_distances:
     print(f"  Average edge distance: {np.mean(edge_feat_array[:, 1]):.2f} Å")
     print()
 
+# + [markdown] id="exercise-2-3d-graph-construction"
+# ### 🏋️ Exercise 2: Build a 3D Graph for Caffeine and Explore Cutoff Effects
+#
+# Caffeine (SMILES: `CN1C=NC2=C1C(=O)N(C)C(=O)N2C`) is a rigid, planar molecule with
+# a fused ring system. Its rigidity makes it a good test case for understanding how
+# cutoff distance affects 3D graph construction — unlike flexible molecules, the graph
+# won't change between conformers, so differences come purely from the cutoff choice.
+#
+# 1. Generate a 3D conformer for caffeine
+# 2. Extract its 3D coordinates and examine the coordinate ranges
+# 3. Build 3D graphs with cutoffs of 3.0, 4.0, and 5.0 Angstroms
+# 4. For each cutoff, report the number of covalent edges, distance-based edges, and total edges
+# 5. Calculate the geometric features (diameter, radius of gyration, asphericity)
+
+# +
+# Exercise 2: 3D graph construction for caffeine
+caffeine_smiles = "CN1C=NC2=C1C(=O)N(C)C(=O)N2C"
+
+# Step 1: Generate a 3D conformer
+# TODO: Use generate_3d_conformer() for caffeine
+caffeine_mol = None
+
+# Step 2: Extract 3D coordinates
+# TODO: Use extract_3d_coordinates() and print the shape and coordinate ranges
+coords = None
+
+# Step 3: Build 3D graphs at three cutoff distances
+# TODO: For each cutoff in [3.0, 4.0, 5.0], call create_3d_molecular_graph()
+# and count the covalent vs distance-based edges
+cutoffs = [3.0, 4.0, 5.0]
+
+# Step 4: Report edge counts for each cutoff
+# Hint: edge_features[:, 0] == 1.0 indicates covalent edges
+# Hint: Remember edges are bidirectional, so divide counts by 2
+
+# Step 5: Calculate geometric features
+# TODO: Use calculate_geometric_features() and print diameter, R_g, and asphericity
+
+# -------------------------------------------------------------------
+# SOLUTION (uncomment to check your work):
+# -------------------------------------------------------------------
+# # Step 1
+# caffeine_mol = generate_3d_conformer(caffeine_smiles)
+# print(f"Caffeine: {caffeine_mol.GetNumAtoms()} atoms, {caffeine_mol.GetNumBonds()} bonds")
+# print()
+#
+# # Step 2
+# coords = extract_3d_coordinates(caffeine_mol)
+# print(f"Coordinate shape: {coords.shape}")
+# print(f"X range: {coords[:, 0].min():.2f} to {coords[:, 0].max():.2f} Å")
+# print(f"Y range: {coords[:, 1].min():.2f} to {coords[:, 1].max():.2f} Å")
+# print(f"Z range: {coords[:, 2].min():.2f} to {coords[:, 2].max():.2f} Å")
+# print()
+#
+# # Steps 3 & 4
+# cutoffs = [3.0, 4.0, 5.0]
+# for cutoff in cutoffs:
+#     node_feat, edge_idx, edge_feat, _ = create_3d_molecular_graph(
+#         caffeine_mol, cutoff_distance=cutoff
+#     )
+#     edge_feat_arr = np.array(edge_feat)
+#     n_covalent = np.sum(edge_feat_arr[:, 0] == 1.0) // 2
+#     n_distance = np.sum(edge_feat_arr[:, 0] == 0.0) // 2
+#     print(f"Cutoff {cutoff} Å: {n_covalent} covalent + {n_distance} distance = {n_covalent + n_distance} total edges")
+# print()
+#
+# # Step 5
+# geom = calculate_geometric_features(caffeine_mol, coords)
+# print(f"Molecular diameter: {geom['diameter']:.2f} Å")
+# print(f"Radius of gyration: {geom['radius_of_gyration']:.2f} Å")
+# print(f"Asphericity: {geom['asphericity']:.3f}")
+# shape = "Nearly spherical" if geom['asphericity'] < 0.1 else "Rod-like" if geom['asphericity'] > 0.5 else "Intermediate"
+# print(f"Shape: {shape}")
+
 # + [markdown] id="0TU76Wlv25Kt"
 # ## 6. Distance-Based Edge Features <a name="distance-based-edge-features"></a>
 #
@@ -1127,6 +1292,23 @@ for name, mol in conformers.items():
     print(f"  Molecular weight: {features_3d['molecular_weight']:.1f} g/mol")
     print(f"  Volume estimate: {features_3d['volume_estimate']:.1f} Ų")
     print(f"  Radius of gyration: {features_3d['radius_of_gyration']:.2f} Å")
+
+# + [markdown] id="checkpoint-distance-edge-features"
+# ### ✅ Checkpoint: Distance-Based Edges and 3D Graph Properties
+#
+# To reinforce your understanding, try answering these questions:
+#
+# 1. **Question**: In a 3D molecular graph, what is the difference between a covalent edge and a distance-based edge?
+#    - **Answer**: A covalent edge corresponds to an actual chemical bond between two atoms. A distance-based edge connects two atoms that are spatially close (within the cutoff distance) but not directly bonded. Distance-based edges can capture non-covalent interactions like hydrogen bonds, van der Waals contacts, and pi-stacking.
+#
+# 2. **Question**: If you decrease the cutoff distance from 5.0 to 3.0 Angstroms, what happens to the graph? What are the trade-offs?
+#    - **Answer**: The graph becomes sparser — fewer distance-based edges are created because fewer non-bonded atom pairs fall within the shorter cutoff. A smaller cutoff focuses on strong short-range interactions but may miss important longer-range contacts. A larger cutoff captures more interactions but adds computational cost and may include physically irrelevant atom pairs.
+#
+# 3. **Question**: Why do the edge features include both the raw distance and the inverse distance (1/distance)?
+#    - **Answer**: The raw distance encodes how far apart two atoms are. The inverse distance (1/d) naturally encodes the strength of many physical interactions (e.g., electrostatic forces scale as 1/r, van der Waals as 1/r^6), making it a more informative feature for the GNN to learn interaction strengths. Including both gives the model flexibility to learn from either representation.
+#
+# 4. **Question**: What does the radius of gyration tell you about a molecule, and why is it useful for GNNs?
+#    - **Answer**: The radius of gyration measures how compact or spread out a molecule is — it is the root-mean-square distance of all atoms from the center of mass. A small value means a compact, globular shape; a large value means an extended shape. It is useful as a global molecular feature for GNNs because it captures overall molecular size and compactness, which correlate with properties like solubility, permeability, and binding affinity.
 
 # + [markdown] id="I15NypCO1bc6"
 # ## 7. 3D Visualization of Molecular Graphs <a name="3d-visualization-of-molecular-graphs"></a>
@@ -1438,6 +1620,69 @@ for name, mol in conformers.items():
     results = compare_2d_vs_3d_graphs(mol, cutoff_distance=4.0)
     comparison_results[name] = results
 
+# + [markdown] id="exercise-3-2d-vs-3d-comparison"
+# ### 🏋️ Exercise 3: Compare 2D vs 3D Graphs for Ibuprofen
+#
+# Ibuprofen (SMILES: `CC(C)CC1=CC=C(C=C1)C(C)C(=O)O`) is a widely used anti-inflammatory
+# drug. It has both a rigid aromatic ring and a flexible chain, making it an interesting
+# case for comparing 2D and 3D graph representations.
+#
+# 1. Generate a 3D conformer for ibuprofen
+# 2. Use `compare_2d_vs_3d_graphs()` with a cutoff of 4.0 Angstroms
+# 3. Calculate the edge ratio (3D edges / 2D edges) — this tells you how much extra
+#    connectivity the 3D representation captures
+# 4. Repeat with cutoffs of 3.0 and 5.0 Angstroms and observe how the ratio changes
+# 5. Think about: for which parts of ibuprofen (ring vs chain) do you expect the most
+#    additional non-covalent edges? Why?
+
+# +
+# Exercise 3: 2D vs 3D comparison for ibuprofen
+ibuprofen_smiles = "CC(C)CC1=CC=C(C=C1)C(C)C(=O)O"
+
+# Step 1: Generate 3D conformer
+# TODO: Use generate_3d_conformer() for ibuprofen
+ibuprofen_mol = None
+
+# Step 2: Compare 2D vs 3D at cutoff 4.0
+# TODO: Use compare_2d_vs_3d_graphs() and store the results
+
+# Step 3: Calculate the edge ratio
+# Hint: ratio = results['3d_edges'] / results['2d_edges']
+edge_ratio = 0.0
+print(f"Edge ratio at 4.0 Å: {edge_ratio:.2f}")
+
+# Step 4: Repeat at different cutoffs
+# TODO: Loop over cutoffs [3.0, 4.0, 5.0] and print the edge ratio for each
+
+# Step 5: Reflect on results (answer in comments or mentally)
+# Which cutoff captures the most meaningful non-covalent interactions?
+# Where in the molecule do you expect the most distance-based edges?
+
+# -------------------------------------------------------------------
+# SOLUTION (uncomment to check your work):
+# -------------------------------------------------------------------
+# # Step 1
+# ibuprofen_mol = generate_3d_conformer(ibuprofen_smiles)
+# print(f"Ibuprofen: {ibuprofen_mol.GetNumAtoms()} atoms, {ibuprofen_mol.GetNumBonds()} bonds")
+# print()
+#
+# # Steps 2-4: Compare at multiple cutoffs
+# for cutoff in [3.0, 4.0, 5.0]:
+#     print(f"\nCutoff: {cutoff} Å")
+#     results = compare_2d_vs_3d_graphs(ibuprofen_mol, cutoff_distance=cutoff)
+#     edge_ratio = results['3d_edges'] / results['2d_edges']
+#     print(f"Edge ratio (3D/2D): {edge_ratio:.2f}")
+#     print(f"Non-covalent edges added: {results['noncovalent_3d']}")
+#
+# # Step 5: Discussion
+# # The aromatic ring in ibuprofen is planar and compact, so atoms across the ring
+# # are relatively close in 3D space (typically 2-4 Å apart). This means the ring
+# # region gains many distance-based edges, even at smaller cutoffs.
+# # The flexible chain can adopt extended conformations where non-bonded atoms
+# # are far apart, so it gains fewer distance-based edges unless the cutoff is large.
+# # At cutoff 4.0 Å, the ratio is typically 2-3x, capturing important through-space
+# # interactions without excessive noise from very distant atom pairs.
+
 # + [markdown] id="zn8cSorXv7SI"
 # ## 9. Advanced 3D Features <a name="advanced-3d-features"></a>
 #
@@ -1717,10 +1962,10 @@ print("\n" + "="*60)
 #    - Create 3D graphs for each conformer
 #    - Compare the edge counts and average distances
 #
-# 2. **Intermediate Exercise**: For caffeine ("CN1C=NC2=C1C(=O)N(C)C(=O)N2C"):
-#    - Create 3D graphs with cutoffs of 3, 4, and 5 Å
-#    - Identify which interactions (beyond covalent bonds) are captured at each cutoff
-#    - Calculate and compare geometric descriptors
+# 2. **Intermediate Exercise**: Pick a drug molecule not used in previous exercises (e.g., naproxen "COC1=CC=C2C=C(C=CC2=C1)C(C)C(=O)O") and:
+#    - Generate 3D graphs at multiple cutoff distances
+#    - Compare the ratio of non-covalent to covalent edges at each cutoff
+#    - Calculate geometric descriptors and relate them to the molecule's known properties
 #
 # 3. **Advanced Exercise**: Design a function that automatically selects an optimal cutoff distance based on molecular size (e.g., using radius of gyration as a guide).
 

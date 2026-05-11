@@ -71,6 +71,7 @@ import seaborn as sns
 
 import rdkit
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 # Consistent plotting style across the tutorial series
 sns.set_context("notebook", font_scale=1.2)
@@ -117,12 +118,22 @@ _ATOMIC_SYMBOL = {1: "H", 6: "C", 7: "N", 8: "O", 9: "F", 15: "P", 16: "S", 17: 
 def smiles2graph_nx(smiles: str) -> nx.Graph:
     """Convert a SMILES string to a NetworkX graph (with explicit Hs).
 
-    Each node stores its atomic number under the ``atomic_number`` attribute.
+    Each node stores its atomic number under ``atomic_number`` and its
+    canonical RDKit 2D coordinates under ``pos`` so the plot uses the
+    standard chemical drawing layout (aromatic rings as hexagons, etc.)
+    rather than a generic graph-theoretic layout.
     """
     mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
+    AllChem.Compute2DCoords(mol)
+    conf = mol.GetConformer()
     G = nx.Graph()
     for atom in mol.GetAtoms():
-        G.add_node(atom.GetIdx(), atomic_number=atom.GetAtomicNum())
+        p = conf.GetAtomPosition(atom.GetIdx())
+        G.add_node(
+            atom.GetIdx(),
+            atomic_number=atom.GetAtomicNum(),
+            pos=(p.x, p.y),
+        )
     for bond in mol.GetBonds():
         G.add_edge(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
     return G
@@ -184,7 +195,7 @@ def plot_oversmoothing_panels(G, feature_history, layers_to_show, suptitle):
 
     Shared colour scale comes from layer 0 (so colour drift toward the mean is visible).
     """
-    pos = nx.kamada_kawai_layout(G)
+    pos = {i: G.nodes[i]["pos"] for i in G.nodes()}
     f0 = feature_history[0]
     vmin, vmax = float(f0.min()), float(f0.max())
     n = len(layers_to_show)

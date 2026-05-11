@@ -199,7 +199,7 @@ def plot_oversmoothing_panels(G, feature_history, layers_to_show, suptitle):
     f0 = feature_history[0]
     vmin, vmax = float(f0.min()), float(f0.max())
     n = len(layers_to_show)
-    fig, axes = plt.subplots(1, n, figsize=(3.0 * n, 3.4))
+    fig, axes = plt.subplots(1, n, figsize=(3.8 * n, 3.4))
     if n == 1:
         axes = [axes]
     sc = None

@@ -56,6 +56,40 @@ print(torch.__version__)
 # !pip install -q rdkit
 # !pip install -q networkx
 
+# + [markdown] id="utils-colab-setup-md-05"
+# **Reusable helpers from Notebook 04.** From this notebook on, the atom /
+# bond featurization (`atom_features`, `bond_features`, `mol_to_graph`)
+# and molecule-graph drawing helpers (`visualize_molecule`,
+# `visualize_molecular_graph`) are imported from the repo's `utils/`
+# package rather than redefined inline. They were introduced and
+# explained in detail in
+# [Notebook 04](04_GNN_GCN.ipynb). The cell below pulls them onto Colab
+# if needed; locally they're already in the cloned repo.
+
+# + id="utils-colab-setup-05"
+#@title Setup utils for Google Colab (run this cell if on Colab)
+import os
+import sys
+
+IN_COLAB = 'google.colab' in sys.modules
+if IN_COLAB:
+    import urllib.request
+    os.makedirs('utils', exist_ok=True)
+    if not os.path.exists('utils/__init__.py'):
+        with open('utils/__init__.py', 'w') as f:
+            f.write('# Utils package for GNN tutorials\n')
+    base = ("https://raw.githubusercontent.com/HFooladi/"
+            "GNNs-For-Chemists/main/notebooks/utils")
+    for fname in ("featurization.py", "visualization.py"):
+        target = f"utils/{fname}"
+        try:
+            urllib.request.urlretrieve(f"{base}/{fname}", target)
+            print(f"✅ downloaded {target}")
+        except Exception as e:
+            print(f"⚠️ failed to download {target}: {e}")
+else:
+    print("📁 Running locally — utils available from repository.")
+
 # + cellView="form" colab={"base_uri": "https://localhost:8080/"} id="1Ej6ZhFBdbPz" outputId="62350c69-7318-4457-81ea-7041ceb26561"
 #@title Import libraries
 import torch
@@ -97,170 +131,10 @@ print(f"Using device: {device}")
 # Molecules are naturally represented as graphs where atoms are nodes and bonds are edges. Let's visualize a simple molecule as a graph:
 
 # + colab={"base_uri": "https://localhost:8080/", "height": 1000} id="887XhJ1Be6jl" outputId="51376bd7-9303-4677-8439-496c434f9cdb"
-def atom_features(atom):
-    """
-    Extract a feature vector for an RDKit atom.
-
-    Features included:
-        - Atomic number
-        - Chirality tag (encoded as integer)
-        - Degree (number of directly-bonded atoms)
-        - Formal charge
-        - Total number of hydrogens
-        - Number of radical electrons
-        - Hybridization (encoded as integer)
-        - Aromaticity (0 or 1)
-        - Ring membership (0 or 1)
-
-    Args:
-        atom (rdkit.Chem.rdchem.Atom): An RDKit Atom object.
-
-    Returns:
-        torch.Tensor: Feature tensor of shape (9,) with dtype long.
-    """
-    return torch.tensor([
-        atom.GetAtomicNum(),                    # Atomic number
-        int(atom.GetChiralTag()),               # Chirality
-        atom.GetDegree(),                       # Degree
-        atom.GetFormalCharge(),                 # Formal charge
-        atom.GetTotalNumHs(),                   # Number of hydrogens
-        atom.GetNumRadicalElectrons(),          # Radical electrons
-        int(atom.GetHybridization()),           # Hybridization
-        int(atom.GetIsAromatic()),              # Aromaticity
-        int(atom.IsInRing())                    # Ring membership
-    ], dtype=torch.long)
-
-
-def bond_features(bond):
-    """
-    Extract a feature vector for an RDKit bond.
-
-    Features included:
-        - Bond type as double (e.g., 1.0 for single, 2.0 for double)
-        - Conjugation (0 or 1)
-        - Ring membership (0 or 1)
-
-    Args:
-        bond (rdkit.Chem.rdchem.Bond): An RDKit Bond object.
-
-    Returns:
-        torch.Tensor: Feature tensor of shape (3,) with dtype long.
-    """
-    return torch.tensor([
-        int(bond.GetBondTypeAsDouble()),        # Bond type
-        int(bond.GetIsConjugated()),            # Conjugation
-        int(bond.IsInRing())                    # Ring membership
-    ], dtype=torch.long)
-
-def mol_to_graph(smiles):
-    """
-    Converts a SMILES into a PyTorch Geometric graph data object.
-
-    Nodes represent atoms with features, and edges represent bonds with features.
-    The graph is undirected: each bond adds two directed edges (i->j and j->i).
-
-    Args:
-        smiles (str): SMILES representing the molecule.
-
-    Returns:
-        torch_geometric.data.Data: Graph data object containing:
-            - x: Node feature matrix [num_nodes, 9]
-            - edge_index: Edge list [2, num_edges]
-            - edge_attr: Edge feature matrix [num_edges, 3]
-            - smiles: Original SMILES
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        raise ValueError(f"Invalid SMILES string: {smiles}")
-
-    # Node features
-    x = torch.stack([atom_features(atom) for atom in mol.GetAtoms()], dim=0)
-
-    # Edge index and edge features
-    edge_index = []
-    edge_attr = []
-
-    for bond in mol.GetBonds():
-        i = bond.GetBeginAtomIdx()
-        j = bond.GetEndAtomIdx()
-
-        # Add both directions for undirected graph
-        edge_index.append((i, j))
-        edge_index.append((j, i))
-
-        edge_attr.append(bond_features(bond))
-        edge_attr.append(bond_features(bond))
-
-    edge_index = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
-    edge_attr = torch.stack(edge_attr, dim=0) if edge_attr else None
-
-    data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, smiles=smiles)
-    return data
-
-
-def visualize_molecule(smiles, title="Molecule"):
-    """Visualize a molecule using RDKit"""
-    mol = Chem.MolFromSmiles(smiles)
-    AllChem.Compute2DCoords(mol)
-
-    # Draw molecule
-    fig, ax = plt.subplots(figsize=(5, 5))
-    drawer = rdMolDraw2D.MolDraw2DCairo(500, 500)
-    drawer.DrawMolecule(mol)
-    drawer.FinishDrawing()
-    img = drawer.GetDrawingText()
-
-    # Convert the image data to a PIL Image
-    pil_image = Image.open(io.BytesIO(img))
-
-    # Display the image
-    plt.imshow(pil_image)
-    plt.axis('off')
-    plt.title(title)
-    plt.show()
-
-def visualize_molecular_graph(smiles, title="Molecular Graph"):
-    """
-    Visualizes the 2D structure of a molecule using RDKit and networkx and displays it.
-
-    Args:
-        smiles (str): SMILES representing the molecule.
-        title (str): Plot title.
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    AllChem.Compute2DCoords(mol)
-
-    data = mol_to_graph(smiles)
-    G = to_networkx(data, to_undirected=True)
-
-    # Get the 2D coordinates from RDKit
-    pos = {}
-    for i, atom in enumerate(mol.GetAtoms()):
-        pos[i] = mol.GetConformer().GetAtomPosition(i)
-        pos[i] = (pos[i].x, -pos[i].y)  # Flip y for better visualization
-
-    plt.figure(figsize=(6, 6))
-
-    # Get atom labels
-    atom_labels = {i: atom.GetSymbol() for i, atom in enumerate(mol.GetAtoms())}
-
-    # Get atom features for node coloring
-    atom_features = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
-
-    # Draw the graph
-    nx.draw(G, pos,
-            labels=atom_labels,
-            with_labels=True,
-            node_color=atom_features,
-            cmap=plt.cm.viridis,
-            node_size=500,
-            font_size=10,
-            font_color='white',
-            edge_color='gray')
-
-    plt.title(title)
-    plt.axis('off')
-    plt.show()
+# Helpers from Notebook 04 — see the import-setup cell above for the
+# Colab download. Locally these resolve from `notebooks/utils/`.
+from utils.featurization import atom_features, bond_features, mol_to_graph
+from utils.visualization import visualize_molecule, visualize_molecular_graph
 
 # Example: Aspirin
 aspirin_smiles = "CC(=O)OC1=CC=CC=C1C(=O)O"

@@ -34,6 +34,10 @@ The following notebooks (01, 02, 03, ...) form the **main learning path** and ar
 | 04_GNN_GCN.ipynb | Graph convolutional network | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/04_GNN_GCN.ipynb) | 2025 |
 | 05_GNN_GAT.ipynb | Graph attention network | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/05_GNN_GAT.ipynb) | 2025 |
 | 06_GNN_GIN.ipynb | Graph isomorphism network | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/06_GNN_GIN.ipynb) | 2025 |
+| 07_GNN_SchNet.ipynb | SchNet: continuous-filter convolutions on 3D atomic positions | _coming soon_ | — |
+| 08_GNN_DimNet.ipynb | DimeNet: directional message passing with bond angles | _coming soon_ | — |
+| 09_GNN_EGNN.ipynb | E(3)-equivariant graph neural network | _coming soon_ | — |
+| 10_GNN_GT.ipynb | Graph Transformer / Graphormer | _coming soon_ | — |
 
 ### Supplementary Deep-Dive Notebooks
 These notebooks (01.1, 01.2, ...) provide **additional details and advanced topics** that complement the main series:
@@ -41,6 +45,9 @@ These notebooks (01.1, 01.2, ...) provide **additional details and advanced topi
 | Notebook | Description | Open in Colab | Year |
 | -------- | ----------- | -------------- | ---- |
 | 01.1_GNN_3D_representation.ipynb | Interactive 3D molecular visualizations and stereochemistry | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/01.1_GNN_3D_representation.ipynb) | 2025 |
+| 01.2_GNN_alternative_representations.ipynb | Alternative graph encodings: dual graphs, atom-bond networks | _coming soon_ | — |
+| 01.3_GNN_fragment_representation.ipynb | Fragment-based molecular representations (BRICS, functional groups, ring systems) | _coming soon_ | — |
+| 01.4_GNN_frameworks.ipynb | Framework comparison: PyTorch Geometric vs. DGL vs. Jraph | _coming soon_ | — |
 | 01.5_GNN_graph_characteristics.ipynb | What molecular graphs look like statistically — size, sparsity, degree, diameter — and why GNNs use 3–5 layers | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/01.5_GNN_graph_characteristics.ipynb) | 2026 |
 | 02.1_GNN_oversmoothing.ipynb | Visualizing oversmoothing: why very deep GNNs fail | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/02.1_GNN_oversmoothing.ipynb) | 2026 |
 

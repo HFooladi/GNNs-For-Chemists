@@ -112,19 +112,28 @@ DATASET_COLORS = {"QM9": "#1f77b4", "BACE": "#ff7f0e", "ESOL": "#2ca02c"}
 # folder doesn't exist yet, the loader cells below fall back to public URLs.
 
 # + id="data-path"
-def find_data_dir() -> Path | None:
-    """Locate the notebooks/data directory whether we're running it
-    from the notebook folder or from the repo root."""
-    candidates = [Path("data"), Path("notebooks/data"), Path("../data"),
-                  Path("../notebooks/data")]
-    for c in candidates:
-        if c.exists() and any(c.iterdir()):
-            return c.resolve()
+GITHUB_RAW_BASE = ("https://raw.githubusercontent.com/HFooladi/"
+                   "GNNs-For-Chemists/main/notebooks/data_smiles")
+
+
+def _find_dir(*names: str) -> Path | None:
+    """Look for a directory by name, checking common locations relative
+    to the notebook (CWD) and to the repo root."""
+    for parent in (Path("."), Path(".."), Path("notebooks"), Path("../notebooks")):
+        for name in names:
+            p = parent / name
+            if p.exists() and any(p.iterdir()):
+                return p.resolve()
     return None
 
 
-DATA_DIR = find_data_dir()
-print(f"Data directory: {DATA_DIR if DATA_DIR else 'not found (will download from URLs)'}")
+# Slim SMILES-only CSVs that ship with the repo — primary source for Colab.
+SMILES_DIR = _find_dir("data_smiles")
+# Full datasets cached locally (only present on the maintainer's machine).
+DATA_DIR = _find_dir("data")
+print(f"Slim SMILES dir: {SMILES_DIR if SMILES_DIR else 'not found locally'}")
+print(f"Full data dir:   {DATA_DIR if DATA_DIR else 'not found locally'}")
+print(f"GitHub fallback: {GITHUB_RAW_BASE}")
 
 
 # + [markdown] id="why"
@@ -354,56 +363,67 @@ print(stats_table[display_cols].to_string())
 #   sizes sit in between QM9 and BACE.
 
 # + id="dataset-loaders"
-#@title Dataset loaders (local cache → URL fallback)
+#@title Dataset loaders (local cache → repo URL fallback)
 
-BACE_URL = ("https://deepchemdata.s3-us-west-1.amazonaws.com/"
-            "datasets/bace_classification.csv")
-ESOL_URL = ("https://deepchemdata.s3-us-west-1.amazonaws.com/"
-            "datasets/delaney-processed.csv")
+def _load_smiles_csv(local_name: str, smiles_col: str = "smiles") -> list[str]:
+    """Load a SMILES column from `notebooks/data_smiles/<local_name>`,
+    falling back to the same file served from the repo's raw GitHub URL
+    if it's not on disk (i.e. running on Colab without a local clone)."""
+    if SMILES_DIR and (SMILES_DIR / local_name).exists():
+        df = pd.read_csv(SMILES_DIR / local_name)
+    else:
+        url = f"{GITHUB_RAW_BASE}/{local_name}"
+        df = pd.read_csv(url)
+    return df[smiles_col].dropna().tolist()
 
 
 def load_bace_smiles() -> list[str]:
-    if DATA_DIR and (DATA_DIR / "bace/raw/bace.csv").exists():
-        df = pd.read_csv(DATA_DIR / "bace/raw/bace.csv", usecols=["mol"])
-        return df["mol"].dropna().tolist()
-    df = pd.read_csv(BACE_URL)
-    col = "mol" if "mol" in df.columns else "smiles"
-    return df[col].dropna().tolist()
+    return _load_smiles_csv("bace_smiles.csv")
 
 
 def load_esol_smiles() -> list[str]:
-    if DATA_DIR and (DATA_DIR / "esol/raw/delaney-processed.csv").exists():
-        df = pd.read_csv(DATA_DIR / "esol/raw/delaney-processed.csv")
-    else:
-        df = pd.read_csv(ESOL_URL)
-    return df["smiles"].dropna().tolist()
+    return _load_smiles_csv("esol_smiles.csv")
 
 
 def load_qm9_smiles(max_n: int = 10_000, seed: int = 42) -> list[str]:
-    """Stream SMILES from gdb9.sdf, keeping a random subset for speed."""
-    if not (DATA_DIR and (DATA_DIR / "QM9/raw/gdb9.sdf").exists()):
-        # No good public QM9-SMILES-only file; tell the user.
-        raise FileNotFoundError(
-            "QM9 SDF not found locally. Either: (a) place gdb9.sdf under "
-            "notebooks/data/QM9/raw/, or (b) load QM9 via "
-            "torch_geometric.datasets.QM9 and adapt this notebook."
-        )
-    suppl = Chem.SDMolSupplier(str(DATA_DIR / "QM9/raw/gdb9.sdf"),
-                               removeHs=True, sanitize=True)
-    rng = np.random.default_rng(seed)
-    # Stream once, reservoir-sample to keep the memory footprint flat.
-    reservoir: list[str] = []
-    for i, mol in enumerate(suppl):
-        if mol is None:
-            continue
-        smi = Chem.MolToSmiles(mol)
-        if len(reservoir) < max_n:
-            reservoir.append(smi)
-        else:
-            j = int(rng.integers(0, i + 1))
-            if j < max_n:
-                reservoir[j] = smi
-    return reservoir
+    """Return up to ``max_n`` random QM9 SMILES.
+
+    Three sources, in priority order:
+    1. The slim 10 k SMILES sample in ``notebooks/data_smiles/`` (the
+       file that ships with the repo — works on Colab out of the box).
+    2. The full ``gdb9.sdf`` cached under ``notebooks/data/QM9/raw/`` —
+       only present on the maintainer's machine; reservoir-sampled.
+    3. The slim sample fetched from this repo's raw GitHub URL.
+    """
+    # 1. Local slim sample.
+    if SMILES_DIR and (SMILES_DIR / "qm9_smiles_10k.csv").exists():
+        df = pd.read_csv(SMILES_DIR / "qm9_smiles_10k.csv")
+        smis = df["smiles"].dropna().tolist()
+        return smis[:max_n] if max_n < len(smis) else smis
+
+    # 2. Full SDF — only if available locally.
+    if DATA_DIR and (DATA_DIR / "QM9/raw/gdb9.sdf").exists():
+        suppl = Chem.SDMolSupplier(str(DATA_DIR / "QM9/raw/gdb9.sdf"),
+                                   removeHs=True, sanitize=True)
+        rng = np.random.default_rng(seed)
+        reservoir: list[str] = []
+        for i, mol in enumerate(suppl):
+            if mol is None:
+                continue
+            smi = Chem.MolToSmiles(mol)
+            if len(reservoir) < max_n:
+                reservoir.append(smi)
+            else:
+                j = int(rng.integers(0, i + 1))
+                if j < max_n:
+                    reservoir[j] = smi
+        return reservoir
+
+    # 3. Colab fallback: pull the slim sample from the repo.
+    url = f"{GITHUB_RAW_BASE}/qm9_smiles_10k.csv"
+    df = pd.read_csv(url)
+    smis = df["smiles"].dropna().tolist()
+    return smis[:max_n] if max_n < len(smis) else smis
 
 
 # + id="compute-stats"
@@ -428,12 +448,9 @@ if CACHE_PATH.exists():
 else:
     print("Computing stats — this takes ~1–2 minutes on the first run.")
     parts = []
-    try:
-        qm9_smiles = load_qm9_smiles(max_n=10_000)
-        parts.append(stats_for_smiles_list(qm9_smiles, "QM9"))
-        print(f"  QM9: {len(parts[-1])} molecules")
-    except FileNotFoundError as e:
-        print(f"  QM9: skipped ({e})")
+    qm9_smiles = load_qm9_smiles(max_n=10_000)
+    parts.append(stats_for_smiles_list(qm9_smiles, "QM9"))
+    print(f"  QM9:  {len(parts[-1])} molecules")
 
     bace_smiles = load_bace_smiles()
     parts.append(stats_for_smiles_list(bace_smiles, "BACE"))

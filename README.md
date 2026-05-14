@@ -41,6 +41,7 @@ These notebooks (01.1, 01.2, ...) provide **additional details and advanced topi
 | Notebook | Description | Open in Colab | Year |
 | -------- | ----------- | -------------- | ---- |
 | 01.1_GNN_3D_representation.ipynb | Interactive 3D molecular visualizations and stereochemistry | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/01.1_GNN_3D_representation.ipynb) | 2025 |
+| 01.5_GNN_graph_characteristics.ipynb | What molecular graphs look like statistically — size, sparsity, degree, diameter — and why GNNs use 3–5 layers | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/01.5_GNN_graph_characteristics.ipynb) | 2026 |
 | 02.1_GNN_oversmoothing.ipynb | Visualizing oversmoothing: why very deep GNNs fail | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HFooladi/GNNs-For-Chemists/blob/main/notebooks/02.1_GNN_oversmoothing.ipynb) | 2026 |
 
 
